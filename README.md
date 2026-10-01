@@ -14,6 +14,9 @@ beside it and the drawn pointer on the pad](docs/media/demo.gif)
 *The pad and its theme menu. Scrolling lands when you lift your finger — see
 [Fidelity, honestly](#fidelity-honestly).*
 
+▶ **[Full demo on YouTube](https://youtube.com/shorts/MGnJgh8sBgY)** — the whole ~1:45
+walkthrough, pad and pointer over Chrome and Termux.
+
 ```
     ≡ MOVE              ← drag handle (tap to re-centre; reads ≡ LOCKED when locked)
  ◐ 🔒   ┌─ surface ─────┐   one finger moves · tap = click · hold then move = drag
