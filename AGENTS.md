@@ -198,6 +198,12 @@ display-id swap that used to bite is now impossible rather than handled.
   script now fails loudly rather than shipping ink past that radius. It was briefly labelled
   `lite` under the arrow; that was dropped because a word is unreadable at a 48px launcher
   icon and the app label already ends in "Lite".
+- **Scrolling is banked, not injected.** Both scroll paths only add to `pendingScrollY`; the
+  single stroke that delivers it is sent from `flushPendingScroll()` on ACTION_UP, because an
+  injected gesture cannot run while a real touch is in progress. That makes `EDGE_GAIN` and
+  `SCROLL_GAIN` plain ratios — injected px per px of finger — so "the strip is too slow" is one
+  number to change, and there is deliberately no throttle or per-flush step left: those existed
+  to pace *live* injection, and with everything banked they served only to throw travel away.
 - **Colours and radii come from `Theme`, never from a literal.** Fields are named by role.
   Adding a preset = one `static` block + one `PRESETS` entry.
 - **An emoji in overlay text ignores `setTextColor`.** The padlock was an emoji and rendered
@@ -245,10 +251,11 @@ Keep this list honest — do not move rows up without actually re-testing.
 - **A gesture click lands, through the pad.** The pointer was converged onto Calculator's `8`
   (cursor at 719,1311; button centre 717,1313), the pad was tapped, and the calculator read
   `Calculator input field 8`.
-- **Edge scrolling works**, and only because it is deferred: an 800px swipe down the strip
-  moves the Settings list as far as the same swipe applied directly (19.1% of pixels vs
-  18.6%, on a fresh relaunch of the same screen). A 150px flick injects 150px and a 400px drag
-  injects 350px, both directions.
+- **Edge scrolling works**, and only because it is deferred: a 200px swipe down the strip now
+  shifts the Settings list about as far as a 400px swipe applied directly (19.9% of pixels vs
+  22.3%, on a fresh relaunch of the same screen). The rate is a clean 2:1 and no longer loses
+  travel: 150px of finger injects 298px, 300px injects 599px, 500px injects 1000px, and the
+  cap only bites past ~650px of finger.
 - **Overlay windows are the ones built and no others**: `dumpsys window` lists exactly four
   for this package (bubble, cursor, pad, hidden theme panel), and the pad reports itself
   touchable (`FLAG_NOT_TOUCHABLE` clear).
@@ -283,9 +290,12 @@ this build, and each is a candidate for the next test session:
 
 **Known defects, not yet fixed**
 
-- **The two-finger scroll loses travel at release.** `capFlush` caps each flush and the
-  leftover stays in `scrollAccum`, which nothing spends once the finger is up, so a fast flick
-  delivers less than the finger travelled. Measured 350px injected for a 400px drag.
+- **Drag is only approximate.** Same root cause as the scroll: a finger-down gesture cannot be
+  injected, so `dragTo()` gets a stroke accepted, has it cancelled, and relies on the
+  `startBeat()` heartbeat to restart the chain. It has not been measured since the scroll work,
+  and it is the next thing worth writing down honestly.
+- **Click-through specifically is unproven.** The verified click had the pointer clear of the
+  pad, so a click aimed *under* the pad has not been shown to reach the app beneath it.
 
 ## Device notes (Galaxy Z Fold 4 / F936B, One UI, Android 16)
 
