@@ -106,6 +106,13 @@ closed when neither is present.
   jar — upstream's four Shizuku jars are gone.
 - `keystore.jks` (signing key) and `out/`, `build/` are gitignored.
 - If `adb install` fails, copy APK to `/sdcard` and `pm install -r` via adb shell.
+- **`build.sh` must never swallow a javac failure.** It used to pipe javac through a warning
+  filter with `|| true`, so a compile error was printed and then ignored: the build went on to
+  `d8` whatever classes had been emitted and packaged an APK whose dex was missing whole
+  classes. It installed cleanly and crashed with `ClassNotFoundException` on service start -
+  the only symptom was a smaller `classes.dex` (19KB against 70KB). The build now captures
+  javac's output, prints it and exits non-zero. If an APK ever shrinks for no reason, suspect
+  this first.
 - Installing alongside upstream is fine — different package id, so both can live on the
   device. **Do not enable both accessibility services at once**: two overlay services would
   both inject input and fight over the pointer.
@@ -119,6 +126,7 @@ closed when neither is present.
 | `java/.../Theme.java` | the five visual presets and every themed colour/radius |
 | `java/.../MainActivity.java` | the launcher screen: status text and a shortcut to Accessibility settings |
 | `build.sh` | the hand-rolled build pipeline |
+| `tools/make-icon.py` | regenerates `res/mipmap-*/ic_launcher_foreground.png` from `tools/pointer.png` |
 | `libs/androidx-annotation.jar` | the one vendored jar |
 
 Key mechanism: every click, long press, scroll and drag is an accessibility gesture sent
@@ -180,6 +188,31 @@ display-id swap that used to bite is now impossible rather than handled.
 - **A docked dot or grip beats the touch surface underneath it.** The strips live in the
   surface, so the theme/lock dots and the four corner grips own their slice of the pad.
   Fine, but it is why the strip can never be touched there.
+- **The launcher icon is generated, not hand-edited.** `tools/make-icon.py` recolours the
+  pointer on an 864px master and downsamples it to all five densities, so the buckets cannot
+  drift apart. It reads `tools/pointer.png` (the pristine white arrow) rather than `res/`,
+  because it writes into `res/` — reading there would make a second run recolour its own
+  output. The artwork is the upstream pointer **at its original size and position**, which is
+  known to sit inside the **66dp safe circle**: a 108dp adaptive icon is only guaranteed to
+  show its central 66dp, so anything nearer the edge gets clipped by a circular mask, and the
+  script now fails loudly rather than shipping ink past that radius. It was briefly labelled
+  `lite` under the arrow; that was dropped because a word is unreadable at a 48px launcher
+  icon and the app label already ends in "Lite".
+- **Scrolling is banked, not injected.** Both scroll paths only add to `pendingScrollY`; the
+  single stroke that delivers it is sent from `flushPendingScroll()` on ACTION_UP, because an
+  injected gesture cannot run while a real touch is in progress. That makes `EDGE_GAIN` and
+  `SCROLL_GAIN` plain ratios — injected px per px of finger — so "the strip is too slow" is one
+  number to change, and there is deliberately no throttle or per-flush step left: those existed
+  to pace *live* injection, and with everything banked they served only to throw travel away.
+- **README media must show only what this build ships.** Images are the one thing no check can
+  catch — CI greps text and cannot see inside a picture — so the clips inherited from upstream
+  were dropped when this tree was forked: they showed the keys panel and the virtual display,
+  which Lite removes. Re-record rather than reuse. Keep them small too: the hero GIF is ~380 KB
+  at 480px wide (upstream's was 150 KB) and the stills ~180 KB each. **A screen recording of a
+  scrolling page is the expensive case** — every pixel changes, so it cost 3.4 MB at the same
+  settings where the theme menu cost 0.4 MB. Shoot something that mostly holds still, and review
+  clips from `ffprobe` numbers and small sheets, never by reading a multi-megabyte contact sheet
+  into context (see `~/ideas/brainstorms/2026-09-26-ztrackpad-demo-video-optimization-state.md`).
 - **Colours and radii come from `Theme`, never from a literal.** Fields are named by role.
   Adding a preset = one `static` block + one `PRESETS` entry.
 - **An emoji in overlay text ignores `setTextColor`.** The padlock was an emoji and rendered
@@ -213,54 +246,69 @@ display-id swap that used to bite is now impossible rather than handled.
 
 Keep this list honest — do not move rows up without actually re-testing.
 
-**Verified for this tree**
+**Verified on device for this tree** (Galaxy Z Fold 4 / SM-F936B, Android 16)
 
-- The tree **compiles, packages, signs and aligns**: `./build.sh` produces a 60 KB signed
-  APK, and the alignment report passes.
-- The packaged app is **Shizuku-free**: only `android.permission.VIBRATE` is requested, and
-  `strings` finds zero `shizuku` occurrences in `classes.dex`.
+- The tree **compiles, packages, signs and aligns**, and the APK is **Shizuku-free**: only
+  `android.permission.VIBRATE` is requested, and `strings` finds zero `shizuku` occurrences in
+  `classes.dex`.
+- **`tests/smoke.sh` passes, 14/14**, against the installed build: package discovery, the
+  5-field status schema, the theme round-trip (including rejecting an unknown preset), the
+  pad-lock round-trip, the implicit-broadcast trap, and the no-Shizuku assertion.
+- **The pointer moves exactly.** Three controlled swipes on the pad moved the cursor by
+  +85/-147 against a predicted +85/-146: `sensitivity` 1.7 with the 14px `SLOP` consumed once
+  per touch. Read from the cursor window frame, not from pixels.
+- **A gesture click lands, through the pad.** The pointer was converged onto Calculator's `8`
+  (cursor at 719,1311; button centre 717,1313), the pad was tapped, and the calculator read
+  `Calculator input field 8`.
+- **Edge scrolling works**, and only because it is deferred: a 200px swipe down the strip now
+  shifts the Settings list about as far as a 400px swipe applied directly (19.9% of pixels vs
+  22.3%, on a fresh relaunch of the same screen). The rate is a clean 2:1 and no longer loses
+  travel: 150px of finger injects 298px, 300px injects 599px, 500px injects 1000px, and the
+  cap only bites past ~650px of finger.
+- **Overlay windows are the ones built and no others**: `dumpsys window` lists exactly four
+  for this package (bubble, cursor, pad, hidden theme panel), and the pad reports itself
+  touchable (`FLAG_NOT_TOUCHABLE` clear).
+- **The launcher icon renders** as the yellow pointer in Settings' App info.
 
-**Not verified for this tree — the on-device list is empty**
+**Measured limits (not defects — the reason upstream has Shizuku)**
 
-- **`tests/smoke.sh` has never run against this build.** When it was written the device was
-  not reachable (wireless debugging off), so nothing here has been installed, let alone
-  exercised. Run it first and treat its result as the entry bar.
-- **Nothing has been run on a device at all**: no install, no enable, no tap, no drag, no
-  scroll, no theme switch, no lock toggle, no click-through measurement.
+- **A gesture cannot be injected while a real touch is in progress.** The platform accepts the
+  stroke and then cancels it, and the injected gesture cancels the touch stream driving it, so
+  a finger-down scroll gets *one* flush and then goes deaf: an 800px swipe produced a single
+  accepted stroke and the list never moved. This is why scroll is spent on release
+  (`flushPendingScroll`) and why the drag is only approximate. It is also why `click()` works
+  and `dragTo()` does not: a click runs on ACTION_UP, when the finger is already up.
+- **Only the accessibility gesture backend exists**, so there is no hover, no way to hide a
+  system pointer, and no display target.
 
 **Inherited from upstream, expected to hold but not re-measured here**
 
-These describe code carried over unchanged, so they are plausible rather than confirmed for
-this build. Each one is a candidate for the first real test session.
+Each of these is code carried over unchanged, so it is plausible rather than confirmed for
+this build, and each is a candidate for the next test session:
 
-- Overlay windows: bubble, drawn pointer and pad are `TYPE_ACCESSIBILITY_OVERLAY`, with drag
-  + 4-corner resize + geometry persistence.
-- Tap → click; hold-still-then-move → drag; tap-then-drag (300ms window).
+- Bubble edge-snap on release, and tap-to-toggle below the touch slop.
 - Haptics: `EFFECT_CLICK`, `usage: TOUCH`, attributed to this app.
-- Two-finger tap → right-click (unverifiable via adb: it needs real multitouch).
-- Pad lock: the handle reads `≡ LOCKED` and geometry is frozen; the flag persists across a
-  service restart.
-- Edge scrolling: a touch starting within `dp(28)` of the left or right edge scrolls instead
-  of moving the pointer, at `EDGE_SCROLL_FACTOR` 0.25 in `EDGE_FLUSH_PX` 12px flushes.
-- Bubble edge snap: dragging a floating dot and releasing sends it to the nearer vertical
-  edge.
-- Z-order: **cursor > pad > bubble** (via `raise()`).
-- Theme presets render distinctly and keep panel positions; the opacity slider scales panel
-  fills only.
-- Click-through: a click aimed under the pad reaches the app beneath it.
+- Two-finger tap → right-click (needs real multitouch, so adb cannot inject it).
+- Two-finger scroll: it shares `flushPendingScroll` with the strips, so it should now work, but
+  it has not been tried with two actual fingers.
+- Pad lock freezing geometry while leaving input alone; the flag persisting across a restart.
+- Theme presets rendering distinctly and keeping panel positions; the opacity slider scaling
+  panel fills only.
+- Click-through: a click aimed *under* the pad reaching the app beneath it. The verified click
+  above had the pointer clear of the pad, so click-through specifically is still unproven.
 
-**Genuinely uncertain, inherited from the no-Shizuku fallback path**
+**Known defects, not yet fixed**
 
-Upstream's README claimed that without Shizuku "drag does nothing", while its code
-contained the chunked-stroke drag implemented below. Both cannot be right. **This build's
-drag is entirely that fallback path, so this is the single most important thing to measure
-first.** Suspect it if drag feels like it stalls or restarts mid-press; the heartbeat in
-`startBeat()` is what recovers it, and `dispatchGesture()` returning false means a stroke
-was refused because another was already in flight.
+- **Drag is only approximate.** Same root cause as the scroll: a finger-down gesture cannot be
+  injected, so `dragTo()` gets a stroke accepted, has it cancelled, and relies on the
+  `startBeat()` heartbeat to restart the chain. It has not been measured since the scroll work,
+  and it is the next thing worth writing down honestly.
+- **Click-through specifically is unproven.** The verified click had the pointer clear of the
+  pad, so a click aimed *under* the pad has not been shown to reach the app beneath it.
 
 ## Device notes (Galaxy Z Fold 4 / F936B, One UI, Android 16)
 
 - Wireless ADB port changes; discover via mDNS
   (`_adb-tls-connect._tcp`, see `~/adbdiscover.py`) then `adb connect`. Stale records linger
   after the toggle goes off, so a refused connection usually means wireless debugging is
-  simply not on.
+  simply not on. Two ports can be advertised at once and only one will accept - try them all.

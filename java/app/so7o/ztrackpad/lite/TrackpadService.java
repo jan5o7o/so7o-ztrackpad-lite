@@ -60,26 +60,30 @@ public class TrackpadService extends AccessibilityService {
     /* ---- gesture tuning ---- */
     private static final int SLOP = 14;            // px before a touch counts as a move
     private static final long LONGPRESS_MS = 520;  // hold this long without moving = long press
-    private static final float SCROLL_STEP = 36f;  // px of finger travel per scroll flush
-    private static final long SCROLL_THROTTLE = 40;// ms between scroll gestures
-    /**
-     * The edge strips scroll at this fraction of the two-finger gain, in flushes of this many
-     * px of finger travel.
-     *
-     * A quarter of the gain, and half the travel per flush, so a swipe down the side arrives
-     * in smaller steps than a two-finger drag does. The flush is also *capped* at the same
-     * amount: without that, a fast flick accumulates a lot of travel between two throttled
-     * flushes and delivers it as one jump, which defeats the point of the smaller step.
-     *
-     * The factor scales only the injected distance, not the travel accounting - a flush
-     * consumes EDGE_FLUSH_PX of finger travel whatever the gain - so this is the one knob
-     * for "how far does the page move", and 0.25 puts it at ~0.35px of content per px of
-     * finger, where 0.5 was ~0.7 and still felt fast.
-     */
-    private static final float EDGE_SCROLL_FACTOR = 0.25f;
-    private static final float EDGE_FLUSH_PX = 12f;
     /** px of injected scroll per px of finger travel, for the two-finger drag. */
     private static final float SCROLL_GAIN = 1.4f;
+    /**
+     * The edge strips: injected px per px of finger travel.
+     *
+     * This is the strip's *speed*, and the one number to reach for when a swipe does not carry
+     * far enough. It is a plain ratio: the whole gesture's travel is banked while the finger is
+     * down and spent as one stroke on release, so a 300px swipe down the strip moves the page
+     * 300 x this.
+     */
+    private static final float EDGE_GAIN = 2.0f;
+    /**
+     * Floor on the distance one gesture injects, in dp.
+     *
+     * The target's touch slop is about 8dp, but the floor is set well above it because a
+     * stroke only marginally over the slop is read as a slow drag rather than a scroll. A
+     * stroke below this is not worth sending at all: it costs a gesture round trip and moves
+     * nothing.
+     */
+    private static final int MIN_SCROLL_DP = 20;
+    /** Ceiling on one gesture's scroll, as a fraction of the screen height. */
+    private static final float SCROLL_CAP_SCREEN = 0.6f;
+    /** How long the single stroke that carries a scroll takes. */
+    private static final long SCROLL_MS = 260L;
     /**
      * Width of the pad's edge scroll strips, in dp.
      *
@@ -190,8 +194,8 @@ public class TrackpadService extends AccessibilityService {
     private float downX, downY, lastX, lastY;
     private long downTime;
     private boolean moved;
-    private float scrollAccum;
-    private long lastScrollAt;
+    /** Scroll asked for during a finger-down gesture, spent on release - see flushPendingScroll. */
+    private float pendingScrollY = 0f;
     private GestureDescription.StrokeDescription stroke;
 
     // =========================================================================
@@ -1504,36 +1508,51 @@ public class TrackpadService extends AccessibilityService {
         longPress();   // the best a touch gesture can do
     }
 
-    /** The two-finger drag: `SCROLL_GAIN` per px of travel, one flush per `SCROLL_STEP`. */
+    /** The two-finger drag: `SCROLL_GAIN` per px of finger travel. */
     private void scrollBy(float dy) {
-        scrollBy(dy, SCROLL_GAIN, SCROLL_STEP, false);
+        pendingScrollY += dy * SCROLL_GAIN;
     }
 
-    /** The edge strips: half the gain, half the travel per flush, and capped flushes. */
+    /** The edge strips: `EDGE_GAIN` per px of finger travel. */
     private void scrollByEdge(float dy) {
-        scrollBy(dy, SCROLL_GAIN * EDGE_SCROLL_FACTOR, EDGE_FLUSH_PX, true);
+        pendingScrollY += dy * EDGE_GAIN;
     }
 
     /**
-     * `gain` scales how far the pointer's window scrolls per px of finger travel. `step` is how
-     * much travel one flush consumes; with `capFlush` that is also the most a single flush may
-     * inject, and the leftover stays on the accumulator for the next one.
+     * Spend the scroll a gesture asked for, once the finger is up.
+     *
+     * This is the only reason the strips work at all. dispatchGesture() cannot inject while a
+     * real touch is in progress: the platform accepts the stroke and then cancels it, and the
+     * injected gesture cancels the real touch stream driving it, so a finger-down scroll gets
+     * exactly one flush and then goes deaf. Measured on this device, an 800px swipe down the
+     * strip produced one accepted flush and nothing else, and the list underneath never moved.
+     *
+     * Taps survive that for the same reason this works: click() runs on ACTION_UP, when the
+     * finger is already up. So a gesture accumulates the distance it wants here and spends it
+     * on release, as a single stroke.
+     *
+     * The cost is real and worth stating plainly: the scroll lands when you lift your finger
+     * instead of following it. That is a worse feel than upstream's, and it is the ceiling for
+     * a build with no shell process to inject through - the alternative is a strip that does
+     * nothing at all, which is what it did before this.
      */
-    private void scrollBy(float dy, float gain, float step, boolean capFlush) {
-        scrollAccum += dy;
-        long now = SystemClock.uptimeMillis();
-        if (Math.abs(scrollAccum) < step) return;
-        if (now - lastScrollAt < SCROLL_THROTTLE) return;
-        float take = scrollAccum;
-        if (capFlush && Math.abs(take) > step) {
-            take = (scrollAccum < 0 ? -step : step);
-        }
+    private void flushPendingScroll() {
+        float move = pendingScrollY;
+        pendingScrollY = 0f;
+        if (move == 0f) return;
+        // One stroke has to carry the whole gesture, so cap it: a long drag is a fling, and a
+        // fling over a full screen carries on scrolling after the finger is long gone.
+        float cap = screenH * SCROLL_CAP_SCREEN;
+        if (move > cap) move = cap;
+        if (move < -cap) move = -cap;
+        // The banked distance is already proportional to the finger, so this is only a floor
+        // for the whole gesture rather than something a fast swipe trips over constantly.
+        if (Math.abs(move) < dp(MIN_SCROLL_DP)) return;
+        Log.i(TAG, "scroll on release move=" + (int) move);
         Path p = new Path();
         p.moveTo(cursorX, cursorY);
-        p.lineTo(cursorX, clamp(cursorY + take * gain, 0, screenH - 1));
-        sendStroke(new GestureDescription.StrokeDescription(p, 0, 60));
-        scrollAccum -= take;
-        lastScrollAt = now;
+        p.lineTo(cursorX, clamp(cursorY + move, 0, screenH - 1));
+        sendStroke(new GestureDescription.StrokeDescription(p, 0, SCROLL_MS));
     }
 
     // ------------------------------------------------------------------
@@ -1701,7 +1720,7 @@ public class TrackpadService extends AccessibilityService {
                     downTime = SystemClock.uptimeMillis();
                     moved = false;
                     scrollMode = false;
-                    scrollAccum = 0f;
+                    pendingScrollY = 0f;
                     twoMoved = false;
                     rightClickFired = false;
                     cancelHold();
@@ -1804,6 +1823,7 @@ public class TrackpadService extends AccessibilityService {
                     if (edgeScroll) {
                         edgeScroll = false;
                         tapDrag = false;
+                        flushPendingScroll();
                         // an edge tap must not arm the tap-then-drag window
                         lastTapUpAt = 0L;
                         updateModeUi();
@@ -1819,7 +1839,7 @@ public class TrackpadService extends AccessibilityService {
                         return true;
                     }
                     cancelHold();
-                    if (scrollMode) { scrollMode = false; tapDrag = false; return true; }
+                    if (scrollMode) { scrollMode = false; tapDrag = false; flushPendingScroll(); return true; }
                     long dt = SystemClock.uptimeMillis() - downTime;
                     if (!moved) {
                         // a second tap that never moved is still a double click
@@ -1838,6 +1858,7 @@ public class TrackpadService extends AccessibilityService {
                     edgeScroll = false;
                     if (dragging) { endDrag(); dragging = false; updateModeUi(); }
                     scrollMode = false;
+                    flushPendingScroll();
                     return true;
             }
             return false;

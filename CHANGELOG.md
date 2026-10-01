@@ -29,6 +29,8 @@ service, enabled once.
   mouse drags, and the keys panel. The pad's `⌫` and `⏎` buttons go with them, since they need
   injected keycodes. The arrow keys stay — `performGlobalAction` sends those without a helper.
 - **The CONTROLS panel is gone** with the settings it held, and so are its two links.
+- **The app has its own icon**: the drawn pointer in yellow, so it is not mistaken for the
+  original at a glance. `tools/make-icon.py` regenerates it.
 - **The pad keeps its identity**: the `●` bubble and edge-snap, the `≡ MOVE` / `≡ LOCKED`
   handle, the five theme presets and the opacity slider, the lock, four-corner resize, edge
   scrolling, click-through, and the drawn pointer.

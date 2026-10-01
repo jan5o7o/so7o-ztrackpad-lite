@@ -8,6 +8,15 @@ It is a derivative of [So7o Z Trackpad](https://github.com/jan5o7o/ztrackpad), w
 more and asks more for it. This one keeps the pad and cuts everything that needed a second
 process.
 
+![The pad over the home screen, handle reading ≡ LOCKED, with the theme and opacity menu open
+beside it and the drawn pointer on the pad](docs/media/demo.gif)
+
+*The pad and its theme menu. Scrolling lands when you lift your finger — see
+[Fidelity, honestly](#fidelity-honestly).*
+
+▶ **[Full demo on YouTube](https://youtube.com/shorts/MGnJgh8sBgY)** — the whole ~1:45
+walkthrough, pad and pointer over Chrome and Termux.
+
 ```
     ≡ MOVE              ← drag handle (tap to re-centre; reads ≡ LOCKED when locked)
  ◐ 🔒   ┌─ surface ─────┐   one finger moves · tap = click · hold then move = drag
@@ -73,6 +82,11 @@ That survives reboots. There is no step 4.
 | two-finger tap | right-click (as a long press) |
 | tap, then touch again within 300ms | arm a press-and-drag |
 
+**Scrolling lands when you lift your finger**, not while it moves. That is not a bug to
+report: an injected gesture cannot run while a real touch is in progress, so the distance is
+accumulated and spent on release. It is the ceiling for an app with no second process to
+inject through, and the reason [upstream](https://github.com/jan5o7o/ztrackpad) uses Shizuku.
+
 ## Scripting it
 
 The pad's state can be read and driven over a broadcast, which is also how the test suite
@@ -123,6 +137,17 @@ Everything here was **removed, not disabled**, and each line is a feature upstre
   a gesture-injected drag cannot grab a title bar.
 - **No hover**, and no way to hide the system pointer if one is present.
 - **No right-click proper.** Two-finger tap becomes a long press.
+
+## In use
+
+Driving a page in Chrome — the pad sits down the right edge and the pointer clicks whatever is
+under it, including the pad's own footprint:
+
+![The pad over Chrome, driving github.com/jan5o7o/so7o-ztrackpad-lite](docs/screenshots/browser-and-pad.jpg)
+
+The theme and opacity menu, opened from the `◐` dot under the handle:
+
+![The theme and opacity menu open beside the pad over the home screen](docs/screenshots/pad-theme-and-opacity.jpg)
 
 ## Fidelity, honestly
 
