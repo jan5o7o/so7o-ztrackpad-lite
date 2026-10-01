@@ -119,6 +119,7 @@ closed when neither is present.
 | `java/.../Theme.java` | the five visual presets and every themed colour/radius |
 | `java/.../MainActivity.java` | the launcher screen: status text and a shortcut to Accessibility settings |
 | `build.sh` | the hand-rolled build pipeline |
+| `tools/make-icon.py` | regenerates `res/mipmap-*/ic_launcher_foreground.png` from `tools/pointer.png` |
 | `libs/androidx-annotation.jar` | the one vendored jar |
 
 Key mechanism: every click, long press, scroll and drag is an accessibility gesture sent
@@ -180,6 +181,16 @@ display-id swap that used to bite is now impossible rather than handled.
 - **A docked dot or grip beats the touch surface underneath it.** The strips live in the
   surface, so the theme/lock dots and the four corner grips own their slice of the pad.
   Fine, but it is why the strip can never be touched there.
+- **The launcher icon is generated, not hand-edited.** `tools/make-icon.py` draws the
+  pointer, recolours it and adds the `lite` label on an 864px master, then downsamples it to
+  all five densities, so the buckets cannot drift apart. It reads `tools/pointer.png` (the
+  pristine white arrow) rather than `res/`, because it writes into `res/` — reading there
+  would make a second run compound the label onto the previous one. Two rules for the
+  artwork: everything must stay inside the **66dp safe circle** (a 108dp adaptive icon is
+  only guaranteed to show its central 66dp, so anything nearer the edge gets clipped by a
+  circular mask), and the label has to be positioned by **ink, not by its line box** — the
+  arrow PNG has ~100px of empty margin, and placing the image rather than the drawing puts
+  the arrow straight through the text.
 - **Colours and radii come from `Theme`, never from a literal.** Fields are named by role.
   Adding a preset = one `static` block + one `PRESETS` entry.
 - **An emoji in overlay text ignores `setTextColor`.** The padlock was an emoji and rendered
