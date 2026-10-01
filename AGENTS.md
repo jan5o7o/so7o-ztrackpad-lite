@@ -204,6 +204,15 @@ display-id swap that used to bite is now impossible rather than handled.
   `SCROLL_GAIN` plain ratios — injected px per px of finger — so "the strip is too slow" is one
   number to change, and there is deliberately no throttle or per-flush step left: those existed
   to pace *live* injection, and with everything banked they served only to throw travel away.
+- **README media must show only what this build ships.** Images are the one thing no check can
+  catch — CI greps text and cannot see inside a picture — so the clips inherited from upstream
+  were dropped when this tree was forked: they showed the keys panel and the virtual display,
+  which Lite removes. Re-record rather than reuse. Keep them small too: the hero GIF is ~380 KB
+  at 480px wide (upstream's was 150 KB) and the stills ~180 KB each. **A screen recording of a
+  scrolling page is the expensive case** — every pixel changes, so it cost 3.4 MB at the same
+  settings where the theme menu cost 0.4 MB. Shoot something that mostly holds still, and review
+  clips from `ffprobe` numbers and small sheets, never by reading a multi-megabyte contact sheet
+  into context (see `~/ideas/brainstorms/2026-09-26-ztrackpad-demo-video-optimization-state.md`).
 - **Colours and radii come from `Theme`, never from a literal.** Fields are named by role.
   Adding a preset = one `static` block + one `PRESETS` entry.
 - **An emoji in overlay text ignores `setTextColor`.** The padlock was an emoji and rendered

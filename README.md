@@ -8,6 +8,12 @@ It is a derivative of [So7o Z Trackpad](https://github.com/jan5o7o/ztrackpad), w
 more and asks more for it. This one keeps the pad and cuts everything that needed a second
 process.
 
+![The pad over the home screen, handle reading ≡ LOCKED, with the theme and opacity menu open
+beside it and the drawn pointer on the pad](docs/media/demo.gif)
+
+*The pad and its theme menu. Scrolling lands when you lift your finger — see
+[Fidelity, honestly](#fidelity-honestly).*
+
 ```
     ≡ MOVE              ← drag handle (tap to re-centre; reads ≡ LOCKED when locked)
  ◐ 🔒   ┌─ surface ─────┐   one finger moves · tap = click · hold then move = drag
@@ -128,6 +134,17 @@ Everything here was **removed, not disabled**, and each line is a feature upstre
   a gesture-injected drag cannot grab a title bar.
 - **No hover**, and no way to hide the system pointer if one is present.
 - **No right-click proper.** Two-finger tap becomes a long press.
+
+## In use
+
+Driving a page in Chrome — the pad sits down the right edge and the pointer clicks whatever is
+under it, including the pad's own footprint:
+
+![The pad over Chrome, driving github.com/jan5o7o/so7o-ztrackpad-lite](docs/screenshots/browser-and-pad.jpg)
+
+The theme and opacity menu, opened from the `◐` dot under the handle:
+
+![The theme and opacity menu open beside the pad over the home screen](docs/screenshots/pad-theme-and-opacity.jpg)
 
 ## Fidelity, honestly
 
