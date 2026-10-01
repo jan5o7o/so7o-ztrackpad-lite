@@ -106,6 +106,13 @@ closed when neither is present.
   jar — upstream's four Shizuku jars are gone.
 - `keystore.jks` (signing key) and `out/`, `build/` are gitignored.
 - If `adb install` fails, copy APK to `/sdcard` and `pm install -r` via adb shell.
+- **`build.sh` must never swallow a javac failure.** It used to pipe javac through a warning
+  filter with `|| true`, so a compile error was printed and then ignored: the build went on to
+  `d8` whatever classes had been emitted and packaged an APK whose dex was missing whole
+  classes. It installed cleanly and crashed with `ClassNotFoundException` on service start -
+  the only symptom was a smaller `classes.dex` (19KB against 70KB). The build now captures
+  javac's output, prints it and exits non-zero. If an APK ever shrinks for no reason, suspect
+  this first.
 - Installing alongside upstream is fine — different package id, so both can live on the
   device. **Do not enable both accessibility services at once**: two overlay services would
   both inject input and fight over the pointer.
@@ -224,54 +231,65 @@ display-id swap that used to bite is now impossible rather than handled.
 
 Keep this list honest — do not move rows up without actually re-testing.
 
-**Verified for this tree**
+**Verified on device for this tree** (Galaxy Z Fold 4 / SM-F936B, Android 16)
 
-- The tree **compiles, packages, signs and aligns**: `./build.sh` produces a 60 KB signed
-  APK, and the alignment report passes.
-- The packaged app is **Shizuku-free**: only `android.permission.VIBRATE` is requested, and
-  `strings` finds zero `shizuku` occurrences in `classes.dex`.
+- The tree **compiles, packages, signs and aligns**, and the APK is **Shizuku-free**: only
+  `android.permission.VIBRATE` is requested, and `strings` finds zero `shizuku` occurrences in
+  `classes.dex`.
+- **`tests/smoke.sh` passes, 14/14**, against the installed build: package discovery, the
+  5-field status schema, the theme round-trip (including rejecting an unknown preset), the
+  pad-lock round-trip, the implicit-broadcast trap, and the no-Shizuku assertion.
+- **The pointer moves exactly.** Three controlled swipes on the pad moved the cursor by
+  +85/-147 against a predicted +85/-146: `sensitivity` 1.7 with the 14px `SLOP` consumed once
+  per touch. Read from the cursor window frame, not from pixels.
+- **A gesture click lands, through the pad.** The pointer was converged onto Calculator's `8`
+  (cursor at 719,1311; button centre 717,1313), the pad was tapped, and the calculator read
+  `Calculator input field 8`.
+- **Edge scrolling works**, and only because it is deferred: an 800px swipe down the strip
+  moves the Settings list as far as the same swipe applied directly (19.1% of pixels vs
+  18.6%, on a fresh relaunch of the same screen). A 150px flick injects 150px and a 400px drag
+  injects 350px, both directions.
+- **Overlay windows are the ones built and no others**: `dumpsys window` lists exactly four
+  for this package (bubble, cursor, pad, hidden theme panel), and the pad reports itself
+  touchable (`FLAG_NOT_TOUCHABLE` clear).
+- **The launcher icon renders** as the yellow pointer in Settings' App info.
 
-**Not verified for this tree — the on-device list is empty**
+**Measured limits (not defects — the reason upstream has Shizuku)**
 
-- **`tests/smoke.sh` has never run against this build.** When it was written the device was
-  not reachable (wireless debugging off), so nothing here has been installed, let alone
-  exercised. Run it first and treat its result as the entry bar.
-- **Nothing has been run on a device at all**: no install, no enable, no tap, no drag, no
-  scroll, no theme switch, no lock toggle, no click-through measurement.
+- **A gesture cannot be injected while a real touch is in progress.** The platform accepts the
+  stroke and then cancels it, and the injected gesture cancels the touch stream driving it, so
+  a finger-down scroll gets *one* flush and then goes deaf: an 800px swipe produced a single
+  accepted stroke and the list never moved. This is why scroll is spent on release
+  (`flushPendingScroll`) and why the drag is only approximate. It is also why `click()` works
+  and `dragTo()` does not: a click runs on ACTION_UP, when the finger is already up.
+- **Only the accessibility gesture backend exists**, so there is no hover, no way to hide a
+  system pointer, and no display target.
 
 **Inherited from upstream, expected to hold but not re-measured here**
 
-These describe code carried over unchanged, so they are plausible rather than confirmed for
-this build. Each one is a candidate for the first real test session.
+Each of these is code carried over unchanged, so it is plausible rather than confirmed for
+this build, and each is a candidate for the next test session:
 
-- Overlay windows: bubble, drawn pointer and pad are `TYPE_ACCESSIBILITY_OVERLAY`, with drag
-  + 4-corner resize + geometry persistence.
-- Tap → click; hold-still-then-move → drag; tap-then-drag (300ms window).
+- Bubble edge-snap on release, and tap-to-toggle below the touch slop.
 - Haptics: `EFFECT_CLICK`, `usage: TOUCH`, attributed to this app.
-- Two-finger tap → right-click (unverifiable via adb: it needs real multitouch).
-- Pad lock: the handle reads `≡ LOCKED` and geometry is frozen; the flag persists across a
-  service restart.
-- Edge scrolling: a touch starting within `dp(28)` of the left or right edge scrolls instead
-  of moving the pointer, at `EDGE_SCROLL_FACTOR` 0.25 in `EDGE_FLUSH_PX` 12px flushes.
-- Bubble edge snap: dragging a floating dot and releasing sends it to the nearer vertical
-  edge.
-- Z-order: **cursor > pad > bubble** (via `raise()`).
-- Theme presets render distinctly and keep panel positions; the opacity slider scales panel
-  fills only.
-- Click-through: a click aimed under the pad reaches the app beneath it.
+- Two-finger tap → right-click (needs real multitouch, so adb cannot inject it).
+- Two-finger scroll: it shares `flushPendingScroll` with the strips, so it should now work, but
+  it has not been tried with two actual fingers.
+- Pad lock freezing geometry while leaving input alone; the flag persisting across a restart.
+- Theme presets rendering distinctly and keeping panel positions; the opacity slider scaling
+  panel fills only.
+- Click-through: a click aimed *under* the pad reaching the app beneath it. The verified click
+  above had the pointer clear of the pad, so click-through specifically is still unproven.
 
-**Genuinely uncertain, inherited from the no-Shizuku fallback path**
+**Known defects, not yet fixed**
 
-Upstream's README claimed that without Shizuku "drag does nothing", while its code
-contained the chunked-stroke drag implemented below. Both cannot be right. **This build's
-drag is entirely that fallback path, so this is the single most important thing to measure
-first.** Suspect it if drag feels like it stalls or restarts mid-press; the heartbeat in
-`startBeat()` is what recovers it, and `dispatchGesture()` returning false means a stroke
-was refused because another was already in flight.
+- **The two-finger scroll loses travel at release.** `capFlush` caps each flush and the
+  leftover stays in `scrollAccum`, which nothing spends once the finger is up, so a fast flick
+  delivers less than the finger travelled. Measured 350px injected for a 400px drag.
 
 ## Device notes (Galaxy Z Fold 4 / F936B, One UI, Android 16)
 
 - Wireless ADB port changes; discover via mDNS
   (`_adb-tls-connect._tcp`, see `~/adbdiscover.py`) then `adb connect`. Stale records linger
   after the toggle goes off, so a refused connection usually means wireless debugging is
-  simply not on.
+  simply not on. Two ports can be advertised at once and only one will accept - try them all.

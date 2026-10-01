@@ -73,6 +73,11 @@ That survives reboots. There is no step 4.
 | two-finger tap | right-click (as a long press) |
 | tap, then touch again within 300ms | arm a press-and-drag |
 
+**Scrolling lands when you lift your finger**, not while it moves. That is not a bug to
+report: an injected gesture cannot run while a real touch is in progress, so the distance is
+accumulated and spent on release. It is the ceiling for an app with no second process to
+inject through, and the reason [upstream](https://github.com/jan5o7o/ztrackpad) uses Shizuku.
+
 ## Scripting it
 
 The pad's state can be read and driven over a broadcast, which is also how the test suite
