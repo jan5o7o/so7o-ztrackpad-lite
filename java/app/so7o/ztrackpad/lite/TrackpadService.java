@@ -1000,8 +1000,14 @@ public class TrackpadService extends AccessibilityService {
         bar.setBackground(bbg);
         bar.setPadding(dp(30), 0, dp(30), dp(8)); // keep the corners clear for the resize grips; the dp(8) sits the buttons clearly above the pad's bottom edge
 
-        // Action bar: right-click / pointer toggle. There is no backspace or enter here:
-        // both need an injected keycode, which this build has no way to send.
+        // Action bar: back / recents / right-click / pointer toggle. Back and recents are
+        // performGlobalAction calls - the same no-Shizuku mechanism as the arrow keys.
+        bar.addView(makeButton("\u25C0", new Runnable() {               // back
+            @Override public void run() { performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK); }
+        }));
+        bar.addView(makeButton("\u25A6", new Runnable() {               // recents / app switcher
+            @Override public void run() { performGlobalAction(AccessibilityService.GLOBAL_ACTION_RECENTS); }
+        }));
         bar.addView(makeButton("\u22EE", new Runnable() {               // right click / context menu at pointer
             @Override public void run() { rightClick(); }
         }));
@@ -1048,7 +1054,9 @@ public class TrackpadService extends AccessibilityService {
                 tick(); setPadLocked(!padLocked);
             }
         });
-        dockDot(container, lockDot, false, 1);
+        // one round control dot per side of the pad's top: theme on the left, lock on the
+        // right - they were both on the left, which left the pad's top row lopsided.
+        dockDot(container, lockDot, true, 0);
 
         // the handle's label is the only thing that reads the lock state, and updateModeUi
         // owns that label
