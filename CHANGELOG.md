@@ -9,6 +9,10 @@ it can only ever describe the app as shipped.
 
 ## Unreleased
 
+Nothing yet.
+
+## 0.2.0 — 2026-10-04
+
 ### Features
 
 - **Scroll marks**: dotted columns down the pad's edge-scroll strips, like a laptop
