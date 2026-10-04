@@ -9,7 +9,20 @@ it can only ever describe the app as shipped.
 
 ## Unreleased
 
-Nothing yet.
+### Features
+
+- **Scroll marks**: dotted columns down the pad's edge-scroll strips, like a laptop
+  trackpad's edge markings. The strips are this build's point, so the dots are always on.
+- **Back and recents buttons** in the pad's bottom row (`◀` and `▦`), sent as
+  accessibility global actions (`GLOBAL_ACTION_BACK` / `GLOBAL_ACTION_RECENTS`) — the
+  same no-Shizuku mechanism as the arrow keys.
+- The **lock dot sits on the right** side of the pad's top, mirroring the theme dot on
+  the left, so the pad has one round control per side.
+- **First-run launcher**: the Open Accessibility Settings button is the first thing under
+  the title (it used to sit below the whole guide), and the top padding follows the real
+  status-bar inset so Android 15+'s edge-to-edge drawing no longer cuts it off.
+- The pad's bottom buttons gain hairline seams between them, and the action bar floats
+  off the pad's bottom edge.
 
 ## 0.1.0 — 2026-10-01
 
