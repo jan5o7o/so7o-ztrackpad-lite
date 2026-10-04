@@ -150,6 +150,8 @@ public class TrackpadService extends AccessibilityService {
     private float density = 3f;
 
     private View bubble, pad;
+    /** The pad's touch surface: draws the edge-strip dotted markers. Always on in Lite. */
+    private PadSurface padSurface;
     private CursorView cursor;
     private TextView moveChip;
     /** The pad's lock dot, so a theme rebuild can hand back a new one. */
@@ -986,14 +988,8 @@ public class TrackpadService extends AccessibilityService {
         });
 
         // --- touch surface ------------------------------------------------
-        View surface = new View(this);
-        GradientDrawable sbg = new GradientDrawable();
-        sbg.setColor(fill(theme.panelBody));
-        surface.setBackground(sbg);
-        LinearLayout.LayoutParams sp =
-                new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f);
-        surface.setLayoutParams(sp);
-        surface.setOnTouchListener(new PadTouch());
+        padSurface = new PadSurface();
+        padSurface.setOnTouchListener(new PadTouch());
 
         // --- button row ---------------------------------------------------
         LinearLayout bar = new LinearLayout(this);
@@ -1002,7 +998,7 @@ public class TrackpadService extends AccessibilityService {
         bbg.setCornerRadii(new float[]{0, 0, 0, 0, dp(theme.radius), dp(theme.radius), dp(theme.radius), dp(theme.radius)});
         bbg.setColor(fill(theme.panelBar));
         bar.setBackground(bbg);
-        bar.setPadding(dp(30), 0, dp(30), 0); // keep the corners clear for the resize grips
+        bar.setPadding(dp(30), 0, dp(30), dp(8)); // keep the corners clear for the resize grips; the dp(8) sits the buttons clearly above the pad's bottom edge
 
         // Action bar: right-click / pointer toggle. There is no backspace or enter here:
         // both need an injected keycode, which this build has no way to send.
@@ -1027,7 +1023,8 @@ public class TrackpadService extends AccessibilityService {
 
         content.addView(handle, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, dp(34)));
-        content.addView(surface);
+        content.addView(padSurface, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
         content.addView(keys, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, dp(40)));
         content.addView(bar, new LinearLayout.LayoutParams(
@@ -1300,8 +1297,11 @@ public class TrackpadService extends AccessibilityService {
         t.setGravity(Gravity.CENTER);
         t.setBackground(keyBgState(0x00000000, theme.accent));
         t.setClickable(true);
-        t.setLayoutParams(new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.MATCH_PARENT, 1f));
+        // dp(1) hairline between the pad's bottom buttons, the same seam makeButton adds.
+        LinearLayout.LayoutParams lp =
+                new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f);
+        lp.rightMargin = dp(1);
+        t.setLayoutParams(lp);
         attachRepeat(t, action, true);
         return t;
     }
@@ -1373,8 +1373,12 @@ public class TrackpadService extends AccessibilityService {
         t.setTextSize(17f);
         t.setGravity(Gravity.CENTER);
         t.setBackground(keyBgState(0x00000000, theme.accent));
-        t.setLayoutParams(new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.MATCH_PARENT, 1f));
+        // dp(1) hairline between the pad's bottom buttons - carried over from Z Trackpad;
+        // the row's own side padding swallows the outer margin, so only the seams show.
+        LinearLayout.LayoutParams lp =
+                new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f);
+        lp.rightMargin = dp(1);
+        t.setLayoutParams(lp);
         t.setPadding(dp(4), 0, dp(4), 0);
         t.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { tick(); action.run(); }
@@ -1676,6 +1680,47 @@ public class TrackpadService extends AccessibilityService {
     // =========================================================================
     // Trackpad touch handling
     // =========================================================================
+
+    /**
+     * The pad's touch surface: the themed body plus a column of dots down the middle of
+     * each edge-scroll strip - the laptop-trackpad affordance that says "drag here to
+     * scroll", carried over from Z Trackpad. Each strip is EDGE_SCROLL_DP wide, so each
+     * column sits dp(EDGE_SCROLL_DP)/2 in from its edge. Dots on purpose, not dashes:
+     * a dashed line reads as a divider, and a dotted one as "use this edge". Always on
+     * in Lite: there is no CONTROLS panel to offer a switch, and the strips are the
+     * whole point of this build.
+     */
+    private class PadSurface extends View {
+        private final Paint mark = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+        PadSurface() {
+            super(TrackpadService.this);
+            GradientDrawable sbg = new GradientDrawable();
+            sbg.setColor(fill(theme.panelBody));
+            setBackground(sbg);
+            mark.setColor(theme.scrollMark);
+        }
+
+        @Override
+        protected void onDraw(Canvas c) {
+            super.onDraw(c);
+            float x = dp(EDGE_SCROLL_DP) / 2f;
+            float r = dp(1.4f);
+            float pitch = dp(12f);
+            // The docked control dots (theme left, lock beside it) sit just under the
+            // handle, dp(8) down from the surface's top and dp(26) tall. The columns have
+            // to start below them, and two dots are dropped from the top of each column
+            // on purpose: dp(8) + dp(26) + dp(6) + two dp(12) pitches = dp(64), so what
+            // remains is clearly clear of the buttons rather than brushing past them.
+            float y = dp(64f);
+            float bottom = getHeight() - dp(12f);
+            while (y <= bottom) {
+                c.drawCircle(x, y, r, mark);
+                c.drawCircle(getWidth() - x, y, r, mark);
+                y += pitch;
+            }
+        }
+    }
 
     private class PadTouch implements View.OnTouchListener {
 
