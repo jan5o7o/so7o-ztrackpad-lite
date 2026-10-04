@@ -19,10 +19,10 @@ walkthrough, pad and pointer over Chrome and Termux.
 
 ```
     ≡ MOVE              ← drag handle (tap to re-centre; reads ≡ LOCKED when locked)
- ◐ 🔒   ┌─ surface ─────┐   one finger moves · tap = click · hold then move = drag
-        │              │   the outer dp(28) of each side scrolls instead of moving
-        └──────────────┘
-        ⋮  ●  ← → ↑ ↓      right-click · hide the pointer · arrow keys
+ ◐     ┌─ surface ─────┐  🔒   one finger moves · tap = click · hold then move = drag
+       │  ·         ·  │      the dotted columns mark each dp(28) scroll strip
+       └──────────────┘
+   ◀ ▦ ⋮ ●  ← → ↑ ↓    back · recents · right-click · hide pointer · arrow keys
 ```
 
 ## Why this exists
@@ -45,7 +45,8 @@ depended on it.
 
 ## Setup
 
-1. Install the APK, open the app, tap **Open Accessibility Settings**.
+1. Install the APK, open the app, tap **Open Accessibility Settings** — the button is the
+   first thing under the title, so a fresh install never has to scroll to find it.
 2. Enable **So7o Z Trackpad Lite** under *Installed services*.
 3. Come back — a small `●` dot appears on screen. Tap it to show the pad.
 
@@ -62,13 +63,16 @@ That survives reboots. There is no step 4.
 - **The pad**
   - **`≡ MOVE`** — the handle. Drag to move the pad; tap to re-centre. Reads `≡ LOCKED`
     when the lock is on, `≡ SCROLL` mid-scroll, `≡ DRAG ARMED` when a drag is armed.
-  - **`◐`** and the **lock** — two dots just below the handle, on the left.
-    `◐` opens the theme menu (five presets plus an opacity slider); the lock freezes the
-    pad's position and size and persists across restarts.
+  - **`◐`** and the **lock** — two round dots just below the handle, one per side of the
+    pad's top: `◐` on the left opens the theme menu (five presets plus an opacity slider);
+    the lock on the right freezes the pad's position and size and persists across restarts.
+  - **The dotted columns** down each side of the surface mark the edge-scroll strips.
   - **Corners** — drag any corner to resize. Only the bottom-right one is drawn; the other
     three are live but invisible.
-  - The button row: **`⋮`** right-click at the pointer, **`●`** hide/show the pointer, and
-    the four **arrow** keys.
+  - The button row: **`◀`** back, **`▦`** the running-apps switcher, **`⋮`** right-click at
+    the pointer, **`●`** hide/show the pointer, and the four **arrow** keys. Back and
+    recents go out as accessibility global actions — the same no-permission mechanism as
+    the arrows.
 
 ## Gestures
 
@@ -131,7 +135,8 @@ Everything here was **removed, not disabled**, and each line is a feature upstre
 - **No floating-window list.** The `▤` panel that listed pop-up windows is gone.
 - **No keys panel.** The programmable keyboard and its `⌨` bubble are gone, and so are the
   pad's `⌫` and `⏎` buttons: they need injected keycodes. The arrow keys stay, because
-  `performGlobalAction` sends those without any helper.
+  `performGlobalAction` sends those without any helper — and so do **back** and **recents**
+  (`◀`/`▦` on the pad), which are the same global-action mechanism.
 - **No split-screen controls**, and no divider dragging.
 - **No real window drags** on DeX or freeform windows — those need injected mouse events, and
   a gesture-injected drag cannot grab a title bar.
