@@ -34,7 +34,7 @@ sha256sum out/ztrackpad-lite.apk
 
 # 6. tag the commit you built, and attach the APK with the notes from the changelog
 git tag -a "v$VERSION" -m "So7o Z Trackpad Lite $VERSION" && git push origin "v$VERSION"
-awk -v v="$VERSION" '$0 == "## " v {f=1;next} /^## /{f=0} f' CHANGELOG.md > "$TMPDIR/notes.md"
+awk -v v="$VERSION" '$0 ~ "^## " v "($| )" {f=1;next} /^## /{f=0} f' CHANGELOG.md > "$TMPDIR/notes.md"
 echo "sha256: $(sha256sum out/ztrackpad-lite.apk | cut -d' ' -f1)" >> "$TMPDIR/notes.md"
 gh release create "v$VERSION" out/ztrackpad-lite.apk \
     --title "So7o Z Trackpad Lite $VERSION" --notes-file "$TMPDIR/notes.md"
