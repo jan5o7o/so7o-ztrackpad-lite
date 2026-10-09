@@ -150,7 +150,8 @@ under it, including the pad's own footprint:
 
 ![The pad over Chrome, driving github.com/jan5o7o/so7o-ztrackpad-lite](docs/screenshots/browser-and-pad.jpg)
 
-The theme and opacity menu, opened from the `◐` dot under the handle:
+The theme and opacity menu, opened from the `◐` dot under the handle — the title bar's
+`×` closes it, and the preset rows have square borders:
 
 ![The theme and opacity menu open beside the pad over the home screen](docs/screenshots/pad-theme-and-opacity.jpg)
 
