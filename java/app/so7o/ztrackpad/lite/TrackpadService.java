@@ -98,8 +98,6 @@ public class TrackpadService extends AccessibilityService {
      * manager to apply FLAG_NOT_TOUCHABLE; the margin covers the round trip back.
      */
     private static final long TOUCHABLE_SETTLE_MS = 40L;
-    /** Nominal length of an injected tap, for holding the panels open long enough. */
-    private static final long TAP_INJECT_MS = 80L;
     private static final long HOLD_MS = 650;
     private static final long DRAG_HOLD_MS = 260;   // hold still this long, then move = drag
     private static final long DRAG_BEAT_MS = 150;   // heartbeat that keeps the press alive
@@ -373,14 +371,30 @@ public class TrackpadService extends AccessibilityService {
         LinearLayout content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
 
-        LinearLayout handle = new LinearLayout(this);
-        handle.setGravity(Gravity.CENTER);
+        FrameLayout handle = new FrameLayout(this);
         GradientDrawable hbg = new GradientDrawable();
         hbg.setCornerRadii(new float[]{dp(theme.radius), dp(theme.radius),
                 dp(theme.radius), dp(theme.radius), 0, 0, 0, 0});
         hbg.setColor(fill(theme.panelHead));
         handle.setBackground(hbg);
-        handle.addView(makeChip("\u25D0  THEME \u2014 tap a preset"));
+        handle.addView(makeChip("\u25D0  THEME \u2014 tap a preset"),
+                new FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.MATCH_PARENT,
+                        Gravity.CENTER));
+        // The close button owns the title bar's right end. It is a clickable child, so it
+        // gets the touch before the drag listener does and pressing it never drags the panel.
+        TextView closeX = new TextView(this);
+        closeX.setText("\u00D7");
+        closeX.setTextSize(15f);
+        closeX.setTextColor(theme.textDim);
+        closeX.setGravity(Gravity.CENTER);
+        closeX.setPadding(dp(14), 0, dp(14), 0);
+        closeX.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { tick(); setThemeVisible(false); }
+        });
+        handle.addView(closeX, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.MATCH_PARENT,
+                Gravity.RIGHT | Gravity.CENTER_VERTICAL));
         handle.setOnTouchListener(new View.OnTouchListener() {
             private float dx, dy;
             @Override public boolean onTouch(View view, MotionEvent e) {
@@ -523,7 +537,7 @@ public class TrackpadService extends AccessibilityService {
         t.setTextSize(12f);
         t.setTextColor(active ? theme.textPrimary : theme.textSecondary);
         t.setPadding(dp(12), dp(11), dp(12), dp(11));
-        t.setBackground(keyBgState(active ? theme.selectedRow : 0x00000000, theme.accent));
+        t.setBackground(keyBgStateRect(active ? theme.selectedRow : 0x00000000, theme.accent));
         t.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { tick(); setTheme(preset.id); }
         });
@@ -1374,6 +1388,21 @@ public class TrackpadService extends AccessibilityService {
         return s;
     }
 
+    private GradientDrawable keyShapeRect(int fill, int stroke) {
+        GradientDrawable g = new GradientDrawable();
+        g.setColor(fill);
+        g.setStroke(dp(1f), stroke);
+        return g;
+    }
+
+    /** Square-cornered key background for list rows: the borders have no rounding. */
+    private StateListDrawable keyBgStateRect(int normal, int pressed) {
+        StateListDrawable s = new StateListDrawable();
+        s.addState(new int[]{android.R.attr.state_pressed}, keyShapeRect(pressed, theme.keyStrokePressed));
+        s.addState(new int[]{}, keyShapeRect(normal, theme.keyStroke));
+        return s;
+    }
+
     private TextView makeButton(String label, final Runnable action) {
         TextView t = new TextView(this);
         t.setText(label);
@@ -1421,12 +1450,17 @@ public class TrackpadService extends AccessibilityService {
         try { wm.updateViewLayout(cursor, cursorLp); } catch (Exception ignored) {}
     }
 
-    private boolean sendStroke(GestureDescription.StrokeDescription s) {
+    private boolean sendStroke(GestureDescription.StrokeDescription s) { return sendStroke(s, null); }
+
+    private boolean sendStroke(GestureDescription.StrokeDescription s,
+                              AccessibilityService.GestureResultCallback cb) {
         try {
             GestureDescription.Builder b = new GestureDescription.Builder();
             b.addStroke(s);
             final boolean isDragChunk = (s.getDuration() == CHUNK_MS);
-            boolean ok = dispatchGesture(b.build(), isDragChunk ? chunkCb : null, null);
+            AccessibilityService.GestureResultCallback use =
+                    (cb != null) ? cb : (isDragChunk ? chunkCb : null);
+            boolean ok = dispatchGesture(b.build(), use, null);
             if (!ok && isDragChunk) Log.w(TAG, "drag: dispatch refused (gesture already in flight)");
             return ok;
         } catch (Exception e) {
@@ -1469,11 +1503,26 @@ public class TrackpadService extends AccessibilityService {
      * up for as long as the gesture lasts plus a margin - a long press needs all of
      * HOLD_MS, or its UP arrives at a window that has gone touchable again.
      */
-    private void injectThroughPanels(final Runnable inject, final long gestureMs) {
+    /**
+     * Restores the pad's touchability as soon as the injected stroke is done with the pad.
+     *
+     * The timed restore below stays as a safety net; this callback shortens the window
+     * whenever the platform reports completion early - and, crucially, when it *cancels*
+     * the stroke (which happens when a real finger lands on the pad mid-injection): the
+     * pad goes straight back to touchable instead of staying open for the whole gesture,
+     * so a follow-up touch lands on the pad, not on the app underneath.
+     */
+    private final AccessibilityService.GestureResultCallback throughPanelsCb =
+            new AccessibilityService.GestureResultCallback() {
+        @Override public void onCompleted(GestureDescription g) { setPanelsTouchable(true); }
+        @Override public void onCancelled(GestureDescription g) { setPanelsTouchable(true); }
+    };
+
+    private void injectThroughPanels(GestureDescription.StrokeDescription stroke, final long gestureMs) {
         setPanelsTouchable(false);
         ui.postDelayed(new Runnable() {
             @Override public void run() {
-                inject.run();
+                if (!sendStroke(stroke, throughPanelsCb)) setPanelsTouchable(true);
                 ui.postDelayed(new Runnable() {
                     @Override public void run() { setPanelsTouchable(true); }
                 }, gestureMs + TOUCHABLE_SETTLE_MS);
@@ -1495,24 +1544,16 @@ public class TrackpadService extends AccessibilityService {
         // Through the panels, not over them: the tap has to reach whatever is under the
         // pad. The finger is already up, so dropping FLAG_NOT_TOUCHABLE is safe here - and
         // the drag path above deliberately does not do it, because there the finger is down.
-        final Path p = new Path();
+        Path p = new Path();
         p.moveTo(cursorX, cursorY);
-        injectThroughPanels(new Runnable() {
-            @Override public void run() {
-                sendStroke(new GestureDescription.StrokeDescription(p, 0, CLICK_MS));
-            }
-        }, TAP_INJECT_MS);
+        injectThroughPanels(new GestureDescription.StrokeDescription(p, 0, CLICK_MS), CLICK_MS);
     }
 
     private void longPress() {
         Log.i(TAG, "longpress at " + (int) cursorX + "," + (int) cursorY);
-        final Path p = new Path();
+        Path p = new Path();
         p.moveTo(cursorX, cursorY);
-        injectThroughPanels(new Runnable() {
-            @Override public void run() {
-                sendStroke(new GestureDescription.StrokeDescription(p, 0, HOLD_MS));
-            }
-        }, HOLD_MS);
+        injectThroughPanels(new GestureDescription.StrokeDescription(p, 0, HOLD_MS), HOLD_MS);
     }
 
     private void rightClick() {
@@ -1748,7 +1789,13 @@ public class TrackpadService extends AccessibilityService {
         private float twoX, twoY;
         private boolean twoMoved;
         private long twoAt;
-        private boolean rightClickFired;
+        // A right click is announced when the first finger lifts but fired only on the
+        // final ACTION_UP: firing at POINTER_UP would open the click-through window while
+        // the second finger is still down, and that finger's touches would then land on
+        // the app underneath. secondMoved records whether the remaining finger moved
+        // while we waited - if it did, the tap was no longer a right click.
+        private boolean pendingRightClick;
+        private boolean secondMoved;
 
         @Override
         public boolean onTouch(View v, MotionEvent e) {
@@ -1775,7 +1822,8 @@ public class TrackpadService extends AccessibilityService {
                     scrollMode = false;
                     pendingScrollY = 0f;
                     twoMoved = false;
-                    rightClickFired = false;
+                    pendingRightClick = false;
+                    secondMoved = false;
                     cancelHold();
                     if (edgeScroll) {
                         updateModeUi();
@@ -1793,6 +1841,8 @@ public class TrackpadService extends AccessibilityService {
                     scrollMode = true;
                     edgeScroll = false;
                     twoMoved = false;
+                    pendingRightClick = false;
+                    secondMoved = false;
                     twoX = centroidX(e);
                     twoY = centroidY(e);
                     twoAt = SystemClock.uptimeMillis();
@@ -1829,6 +1879,10 @@ public class TrackpadService extends AccessibilityService {
                     float dx = x - lastX, dy = y - lastY;
                     lastX = x;
                     lastY = y;
+                    // a right click is pending only until the remaining finger moves
+                    if (pendingRightClick && (Math.abs(dx) > SLOP || Math.abs(dy) > SLOP)) {
+                        secondMoved = true;
+                    }
                     if (edgeScroll) {
                         // same sign convention as the two-finger drag: swipe up, content down
                         scrollByEdge(dy);
@@ -1858,10 +1912,12 @@ public class TrackpadService extends AccessibilityService {
                     if (e.getPointerCount() <= 2) {
                         scrollMode = false;
                         // two fingers down and never moved == right click (no duration limit,
-                        // otherwise a slow two-finger tap falls into a dead zone)
+                        // otherwise a slow two-finger tap falls into a dead zone). Announced
+                        // here, fired on ACTION_UP: firing now would open the click-through
+                        // window while the second finger is still down (see pendingRightClick).
                         if (!twoMoved) {
-                            rightClick();
-                            rightClickFired = true;
+                            pendingRightClick = true;
+                            secondMoved = false;
                         }
                         // remaining finger becomes a move origin again
                         int keep = (e.getActionIndex() == 0) ? 1 : 0;
@@ -1872,7 +1928,14 @@ public class TrackpadService extends AccessibilityService {
                     return true;
 
                 case MotionEvent.ACTION_UP:
-                    if (rightClickFired) { rightClickFired = false; cancelHold(); tapDrag = false; return true; }
+                    if (pendingRightClick) {
+                        pendingRightClick = false;
+                        cancelHold();
+                        tapDrag = false;
+                        if (!secondMoved) rightClick();
+                        lastTapUpAt = 0L;   // a right click must not arm the tap-then-drag window
+                        return true;
+                    }
                     if (edgeScroll) {
                         edgeScroll = false;
                         tapDrag = false;
@@ -1908,6 +1971,8 @@ public class TrackpadService extends AccessibilityService {
                 case MotionEvent.ACTION_CANCEL:
                     cancelHold();
                     tapDrag = false;
+                    pendingRightClick = false;
+                    secondMoved = false;
                     edgeScroll = false;
                     if (dragging) { endDrag(); dragging = false; updateModeUi(); }
                     scrollMode = false;

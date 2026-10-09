@@ -235,6 +235,10 @@ display-id swap that used to bite is now impossible rather than handled.
 
 - Click-through (`injectThroughPanels`) drops `FLAG_NOT_TOUCHABLE` for ~110ms while
   injecting; only used from tap paths (finger already up). The drag path must NOT use it.
+- **The click-through window ends when the injected stroke completes or cancels, not on a timer alone.** `throughPanelsCb` restores touchability from `onCompleted`/`onCancelled` (cancellation is exactly what happens when a real finger lands on the pad mid-injection — the pad then goes straight back to touchable); the delayed restore is only the safety net.
+- **A two-finger right-click is announced at the first finger's lift (`ACTION_POINTER_UP`) but fired on the final `ACTION_UP`.** Firing at `POINTER_UP` opened the click-through window while the second finger was still down on the pad, and that finger's touches landed on the app underneath — the "the trackpad lets taps through" bug. `secondMoved` tracks whether the remaining finger moved while the click was pending; if it did, the tap is no longer a right click.
+- The theme panel's preset rows use **square** borders (`keyBgStateRect`) — the rows' strokes have no rounding, unlike the panel outline (which keeps `theme.radius`) and the pad's round-cornered keys (`keyShape`).
+- The theme panel's title bar owns an **`×` close button at its right end** (a clickable child of the handle, so pressing it never drags the panel); `setThemeVisible(false)` is all it does.
 - Samsung `FreecessHandler` may freeze the background app — the accessibility service keeps
   it alive once enabled.
 - `GLOBAL_ACTION_DPAD_*` was added in API **33** (Android 13), so the arrow keys genuinely
@@ -254,6 +258,17 @@ Keep this list honest — do not move rows up without actually re-testing.
 - **`tests/smoke.sh` passes, 14/14**, against the installed build: package discovery, the
   5-field status schema, the theme round-trip (including rejecting an unknown preset), the
   pad-lock round-trip, the implicit-broadcast trap, and the no-Shizuku assertion.
+- **The theme panel closes via its new `×` button and reopens via the `◐` dot.** With the panel
+  visible on device, a tap on the × (at the title bar's right end) turned the panel's window
+  `mViewVisibility` 0x0 → 0x8; tapping the pad's `◐` dot reopened it.
+- **The preset rows' borders are square, not rounded.** Pixel-sampled the live screenshot at a
+  row's top-left corner: the 1dp stroke is present at the corner pixel and runs unbroken along
+  the top and left edges (a rounded 18px corner would cut both away).
+- **The click-through window restores reliably.** Logcat for one pad tap: `click at x,y` →
+  `panels touchable=false` → `touchable=true` +90ms later (stroke-completion callback, plus the
+  idempotent timer restore), and `dumpsys window` shows no lingering `FLAG_NOT_TOUCHABLE` on the pad.
+  The two-finger right-click deferral (fire on `ACTION_UP`, not `POINTER_UP`) is code-reviewed
+  but needs real multitouch, which adb cannot inject.
 - **The pointer moves exactly.** Three controlled swipes on the pad moved the cursor by
   +85/-147 against a predicted +85/-146: `sensitivity` 1.7 with the 14px `SLOP` consumed once
   per touch. Read from the cursor window frame, not from pixels.

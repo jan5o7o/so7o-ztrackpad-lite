@@ -7,6 +7,26 @@ update that does not, so the two move together. Each entry here is the release's
 Keep this file free of development-tree names: it is exported to the public repo unchanged, so
 it can only ever describe the app as shipped.
 
+## 0.3.0 — 2026-10-09
+
+### Features
+
+- The theme panel's title bar gains an **`×` close button** at its right end — one tap
+  dismisses the panel without hunting for the `◐` dot, and pressing it never drags the
+  panel. It reopens from the same dot as before.
+- The preset list in the theme panel now draws **square borders** on the rows instead of
+  rounded ones, so the list reads as a clean grid rather than a stack of pills.
+
+### Fixes
+
+- **The trackpad can no longer leak touches to the app underneath.** A two-finger
+  right-click used to drop the pad's touch barrier at the first finger's lift, while the
+  second finger was still down — that finger's touches then landed in the app below the
+  pad (taps could hit items in whatever sat underneath). The right-click is now fired
+  only when both fingers are up, and the click-through window closes the moment the
+  injected gesture completes or is cancelled, so a follow-up touch lands on the pad, not
+  on the app.
+
 ## Unreleased
 
 Nothing yet.
