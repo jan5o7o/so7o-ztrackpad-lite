@@ -1,0 +1,1 @@
+A floating trackpad and pointer for Android. No root, no companion app.

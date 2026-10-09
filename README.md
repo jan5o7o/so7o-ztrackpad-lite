@@ -143,8 +143,10 @@ tests/smoke.sh                  # device checks that need no fingers
 ```
 
 Signing needs a keystore password: set `KSPASS`, or keep it in `~/.ztrackpad-lite-kspass`.
-The build fails closed without it. `sdk/platforms/android-36/android.jar` is gitignored —
-restore it from the platform archive before the first build.
+With neither, the build still runs and stops after packaging, leaving
+`out/ztrackpad-lite-unsigned.apk` — the path a builder that signs with its own key needs.
+`sdk/platforms/android-36/android.jar` is gitignored — restore it from the platform archive
+before the first build, or point `ANDROID_JAR` at an SDK you already have.
 
 ## In use
 
