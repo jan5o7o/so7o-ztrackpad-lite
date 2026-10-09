@@ -1,0 +1,48 @@
+# Draft F-Droid metadata for app.so7o.ztrackpad.lite
+#
+# This file belongs in the fdroiddata repository at
+#   metadata/app.so7o.ztrackpad.lite.yml
+# It is kept here as a draft so the values live next to the app they describe. It is NOT read
+# from this repo by F-Droid (only a self-hosted repo would read a .fdroid.yml here).
+#
+# Before submitting, confirm two things against the current fdroiddata docs and buildserver,
+# because they are the parts of a hand-rolled build that F-Droid is pickiest about:
+#
+#   1. The platform jar. build.sh needs the Android 16 (API 36) platform on disk. F-Droid's
+#      buildserver has no network, so it cannot fetch the platform zip the way a local clone
+#      does. Either the buildserver must already ship API 36, or the platform has to come in
+#      through the metadata (an `android:`/SDK field, or a prebuild). build.sh now honours an
+#      ANDROID_JAR override for exactly this.
+#   2. Reproducibility. F-Droid fails the build when the result is not reproducible. The zip
+#      writer in build.sh already pins a fixed mtime, which is the usual source of a mismatch.
+#
+# Build with SKIP_SIGN=1 (added to build.sh) so the compile step does not ask for a keystore:
+# F-Droid builds unsigned and signs with its own key.
+
+Categories:
+  - System
+License: MIT
+AuthorName: Jan So7o
+AuthorEmail: [EMAIL]
+WebSite: https://github.com/jan5o7o/so7o-ztrackpad-lite
+SourceCode: https://github.com/jan5o7o/so7o-ztrackpad-lite
+IssueTracker: https://github.com/jan5o7o/so7o-ztrackpad-lite/issues
+Changelog: https://github.com/jan5o7o/so7o-ztrackpad-lite/blob/main/CHANGELOG.md
+
+RepoType: git
+Repo: https://github.com/jan5o7o/so7o-ztrackpad-lite.git
+
+Builds:
+  - versionName: 0.3.0
+    versionCode: 3
+    commit: v0.3.0
+    build: SKIP_SIGN=1 ./build.sh
+    # TODO(confirm): the SDK/platform field name and the API 36 availability on the buildserver.
+    # The draft below is the intent, not a verified recipe.
+    android:
+      - 36
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 0.3.0
+CurrentVersionCode: 3

@@ -1,0 +1,28 @@
+A floating trackpad and pointer for Android, with no root and no companion app. Enable one accessibility service once, and it stays enabled across reboots.
+
+WHY A TRACKPAD ON A PHONE
+
+Hold an unfolded foldable in two hands and your thumbs sit on the bottom half of the screen, usually over a keyboard. The top half is out of reach. Park this trackpad next to the thumb that is not typing, and one thumb drives the pointer across the whole screen: tap a link at the top, scroll a page, drag a slider.
+
+On a Galaxy Fold, set the keyboard on the left and the trackpad on the right, and the right thumb does the pointing. The same idea works one-handed on any phone.
+
+WHAT IT DOES
+
+* One finger moves the pointer. Tap to click, hold still for a long press, two-finger tap for right-click.
+* Clicks land through the pad: tapping sends the click at the pointer, even where the pad itself covers the target.
+* Edge scroll strips down both sides of the pad, like a laptop's. Scroll a long page at your own pace, or use a two-finger drag.
+* Five colour themes and a panel-opacity slider.
+* Back, recents, and the four arrow keys, sent as accessibility global actions.
+* Lock the pad's position and size, and drag any corner to resize it.
+
+HONEST LIMITS
+
+Click, long press, scroll and drag are all accessibility gestures. That is what makes the app dependency-free, and it is also its cost: there is no hover, the drag is approximate, and right-click is a long press rather than a true secondary button. Scrolling lands when you lift your finger, not while it moves.
+
+REQUIREMENTS
+
+Android 11 or newer to install. The arrow keys use an API added in Android 13. No root, no VPN, no device-owner setup, and nothing to install alongside it.
+
+The app uses an accessibility service, which you enable yourself in Settings, to send taps, scrolls and drags. It requests only the vibrate permission, has no network access, and collects nothing.
+
+MIT licensed. Source and the whole build are in the repository.

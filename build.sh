@@ -6,7 +6,9 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 SDK="$ROOT/sdk"
-ANDROID_JAR="$SDK/platforms/android-36/android.jar"
+# Overridable so a builder that keeps the SDK somewhere else (F-Droid's buildserver, a CI
+# image) can point at its own platform jar instead of the sdk/ copy this clone restores by hand.
+ANDROID_JAR="${ANDROID_JAR:-$SDK/platforms/android-36/android.jar}"
 BUILD="$ROOT/build"
 OUT="$ROOT/out"
 KS="$ROOT/keystore.jks"
@@ -24,7 +26,14 @@ KSFILE="$HOME/.ztrackpad-lite-kspass"
 if [ -z "${KSPASS:-}" ] && [ -f "$KSFILE" ]; then
   KSPASS="$(cat "$KSFILE")"
 fi
-KSPASS="${KSPASS:?set KSPASS in the environment, or create $KSFILE containing it}"
+# Signing is optional, so a builder that compiles unsigned and signs with its own key (F-Droid,
+# and anything else that packages and re-signs) can run this script as it stands. Set
+# SKIP_SIGN=1, or simply have no KSPASS and no password file, and the build stops after
+# packaging with the unsigned APK left in out/.
+SIGN=1
+if [ "${SKIP_SIGN:-0}" = "1" ] || [ -z "${KSPASS:-}" ]; then
+  SIGN=0
+fi
 MIN_SDK=30
 TARGET_SDK=36
 # versionCode/versionName live in the manifest only, so a release cannot be built with a label
@@ -142,6 +151,12 @@ print('   alignment OK (all STORED entries 4-byte aligned)')
 PY
 
 echo "==> 6/6 sign"
+if [ "$SIGN" = 0 ]; then
+  echo "    skipped: no KSPASS / SKIP_SIGN=1, leaving the unsigned APK"
+  echo
+  echo "APK: $OUT/ztrackpad-lite-unsigned.apk  ($(du -h "$OUT/ztrackpad-lite-unsigned.apk" | cut -f1))  v$VERSION_NAME ($VERSION_CODE)  UNSIGNED"
+  exit 0
+fi
 if [ ! -f "$KS" ]; then
   keytool -genkeypair -v -keystore "$KS" -storepass "$KSPASS" -keypass "$KSPASS" \
     -alias ztrackpad -keyalg RSA -keysize 2048 -validity 10000 \

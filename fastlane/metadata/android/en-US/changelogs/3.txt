@@ -1,0 +1,2 @@
+* The theme panel's title bar gains an × close button, and the preset rows now have square borders.
+* Fix: a two-finger right-click no longer drops the pad's touch barrier while the second finger is still down, so touches stop leaking to the app underneath. The click-through window also closes as soon as the injected gesture ends.
