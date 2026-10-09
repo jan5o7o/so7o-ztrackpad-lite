@@ -27,6 +27,11 @@ it can only ever describe the app as shipped.
   injected gesture completes or is cancelled, so a follow-up touch lands on the pad, not
   on the app.
 
+### Demo
+
+▶ [A short walkthrough of the pad and its theme menu](https://youtube.com/shorts/Vc9253FUyPU?feature=share) —
+the theme panel's × close button and square rows, and the click-through fix.
+
 ## Unreleased
 
 Nothing yet.

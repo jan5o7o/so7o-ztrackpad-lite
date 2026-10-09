@@ -14,8 +14,8 @@ beside it and the drawn pointer on the pad](docs/media/demo.gif)
 *The pad and its theme menu. Scrolling lands when you lift your finger — see
 [Fidelity, honestly](#fidelity-honestly).*
 
-▶ **[Full demo on YouTube](https://youtube.com/shorts/MGnJgh8sBgY)** — the whole ~1:45
-walkthrough, pad and pointer over Chrome and Termux.
+▶ **[Full demo on YouTube](https://youtube.com/shorts/Vc9253FUyPU?feature=share)** — the whole
+~1:45 walkthrough, pad and pointer over Chrome and Termux.
 
 ```
     ≡ MOVE              ← drag handle (tap to re-centre; reads ≡ LOCKED when locked)
@@ -43,10 +43,29 @@ depended on it.
   `GLOBAL_ACTION_DPAD_*`, added in **Android 13**, so the honest floor for those is 13.
 - **Nothing else.** No root, no Shizuku, no companion APK, no VPN, no device-owner setup.
 
+## Install
+
+Grab `ztrackpad-lite.apk` from the [releases page](https://github.com/jan5o7o/so7o-ztrackpad-lite/releases)
+(the latest release). It is a normal APK, not from the Play Store, so two Android guards
+will try to stop you. Both are expected for any sideloaded app — this one is signed with
+the maintainer's key and the source is right here in this repo.
+
+- **Google Play Protect** will warn that it does not recognise the app, or that the file
+  *may be harmful*. That is the standard message for an APK from outside the Play Store.
+  Tap **Install anyway** (or **Download anyway** if the browser blocks the download).
+  Play Protect stays on; it simply has no catalogue entry for this app.
+- **Restricted settings** (Android 13+): an app installed from a browser download is
+  treated as restricted, which locks its sensitive permissions — including the
+  accessibility service. Until you lift that, the service toggle will not open. Go to
+  **Settings → Apps → So7o Z Trackpad Lite → ⋮ (menu) → Allow restricted settings** and
+  confirm. Google's own note: <https://support.google.com/android/answer/12623953>.
+
 ## Setup
 
-1. Install the APK, open the app, tap **Open Accessibility Settings** — the button is the
-   first thing under the title, so a fresh install never has to scroll to find it.
+1. Open the app and tap **Open Accessibility Settings** — the button is the first thing
+   under the title, so a fresh install never has to scroll to find it. That button is the
+   fast way back here too: it jumps straight to the accessibility screen whenever you want
+   to flip the service on or off.
 2. Enable **So7o Z Trackpad Lite** under *Installed services*.
 3. Come back — a small `●` dot appears on screen. Tap it to show the pad.
 
