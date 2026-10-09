@@ -8,11 +8,11 @@
 # Before submitting, confirm two things against the current fdroiddata docs and buildserver,
 # because they are the parts of a hand-rolled build that F-Droid is pickiest about:
 #
-#   1. The platform jar. build.sh needs the Android 16 (API 36) platform on disk. F-Droid's
-#      buildserver has no network, so it cannot fetch the platform zip the way a local clone
-#      does. Either the buildserver must already ship API 36, or the platform has to come in
-#      through the metadata (an `android:`/SDK field, or a prebuild). build.sh now honours an
-#      ANDROID_JAR override for exactly this.
+#   1. The platform jar: resolved. F-Droid's buildserver provisioning (fdroidserver's
+#      buildserver/provision-android-sdk, master, last changed 2023-11) tops out at android-33.
+#      build.sh takes TARGET_SDK and looks the platform up in ANDROID_HOME, and the tree was
+#      verified to compile and package clean against platform 33 (targetSdkVersion 33), because
+#      the code uses nothing newer. So this build does not depend on API 36 being present.
 #   2. Reproducibility. F-Droid fails the build when the result is not reproducible. The zip
 #      writer in build.sh already pins a fixed mtime, which is the usual source of a mismatch.
 #
@@ -38,11 +38,10 @@ Builds:
   - versionName: 0.3.0
     versionCode: 3
     commit: v0.3.0
-    build: SKIP_SIGN=1 ./build.sh
-    # TODO(confirm): the SDK/platform field name and the API 36 availability on the buildserver.
-    # The draft below is the intent, not a verified recipe.
-    android:
-      - 36
+    # TARGET_SDK=33 because the buildserver's SDK tops out there. Verified locally against the
+    # platform-33 jar: the APK compiles and packages, at targetSdkVersion 33. If the buildserver
+    # does ship API 36, drop TARGET_SDK=33 and the tree builds against 36 unchanged.
+    build: TARGET_SDK=33 SKIP_SIGN=1 ./build.sh
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags

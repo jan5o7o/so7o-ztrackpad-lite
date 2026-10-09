@@ -6,9 +6,6 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 SDK="$ROOT/sdk"
-# Overridable so a builder that keeps the SDK somewhere else (F-Droid's buildserver, a CI
-# image) can point at its own platform jar instead of the sdk/ copy this clone restores by hand.
-ANDROID_JAR="${ANDROID_JAR:-$SDK/platforms/android-36/android.jar}"
 BUILD="$ROOT/build"
 OUT="$ROOT/out"
 KS="$ROOT/keystore.jks"
@@ -35,7 +32,19 @@ if [ "${SKIP_SIGN:-0}" = "1" ] || [ -z "${KSPASS:-}" ]; then
   SIGN=0
 fi
 MIN_SDK=30
-TARGET_SDK=36
+# TARGET_SDK picks the platform to compile and link against. It is overridable so a builder
+# whose SDK tops out below 36 can still compile this tree, provided the code uses nothing newer
+# than that platform.
+TARGET_SDK="${TARGET_SDK:-36}"
+# The platform jar. An explicit ANDROID_JAR wins; otherwise take it from an SDK in ANDROID_HOME
+# when one is set, and only then from the sdk/ directory this clone restores by hand.
+if [ -z "${ANDROID_JAR:-}" ]; then
+  if [ -n "${ANDROID_HOME:-}" ] && [ -f "$ANDROID_HOME/platforms/android-$TARGET_SDK/android.jar" ]; then
+    ANDROID_JAR="$ANDROID_HOME/platforms/android-$TARGET_SDK/android.jar"
+  else
+    ANDROID_JAR="$SDK/platforms/android-$TARGET_SDK/android.jar"
+  fi
+fi
 # versionCode/versionName live in the manifest only, so a release cannot be built with a label
 # that disagrees with the tree it came from.
 VERSION_CODE=$(sed -n 's/.*android:versionCode="\([0-9]*\)".*/\1/p' "$ROOT/AndroidManifest.xml" | head -1)

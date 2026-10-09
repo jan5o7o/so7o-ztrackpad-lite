@@ -97,11 +97,17 @@ that the installed package mentions Shizuku nowhere. Run it after installing, ag
 whatever is installed.
 
 Signing needs the keystore password, which is **deliberately not in the repo**: set
-`KSPASS` in the environment, or keep it in `~/.ztrackpad-lite-kspass`. `build.sh` fails
-closed when neither is present.
+`KSPASS` in the environment, or keep it in `~/.ztrackpad-lite-kspass`. With neither, or with
+`SKIP_SIGN=1`, the build still runs and stops after packaging, leaving
+`out/ztrackpad-lite-unsigned.apk` — the path a builder that signs with its own key needs
+(F-Droid).
 
 - `sdk/platforms/android-36/android.jar` is gitignored; restore it from
   `https://dl.google.com/android/repository/platform-36_r02.zip`.
+- **The platform is overridable.** `TARGET_SDK` picks which platform to compile and link
+  against (default 36), and the jar is looked up in `ANDROID_HOME` first, then in the clone's
+  `sdk/`; an explicit `ANDROID_JAR` overrides both. The tree was verified to build against
+  platform 33 as well, so a builder whose SDK tops out below 36 can still build it.
 - `libs/androidx-annotation.jar` is committed so the build is reproducible. It is the only
   jar — upstream's four Shizuku jars are gone.
 - `keystore.jks` (signing key) and `out/`, `build/` are gitignored.

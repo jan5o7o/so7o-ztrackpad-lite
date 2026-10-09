@@ -146,7 +146,9 @@ Signing needs a keystore password: set `KSPASS`, or keep it in `~/.ztrackpad-lit
 With neither, the build still runs and stops after packaging, leaving
 `out/ztrackpad-lite-unsigned.apk` — the path a builder that signs with its own key needs.
 `sdk/platforms/android-36/android.jar` is gitignored — restore it from the platform archive
-before the first build, or point `ANDROID_JAR` at an SDK you already have.
+before the first build, or point `ANDROID_JAR` at an SDK you already have. `TARGET_SDK` picks
+the platform (default 36) and the jar is looked for in `ANDROID_HOME` first, then in `sdk/`, so
+a builder whose SDK tops out below 36 can still build this tree.
 
 ## In use
 
