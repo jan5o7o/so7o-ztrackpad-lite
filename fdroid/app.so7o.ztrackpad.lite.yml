@@ -19,14 +19,13 @@
 # Build with SKIP_SIGN=1 (added to build.sh) so the compile step does not ask for a keystore:
 # F-Droid builds unsigned and signs with its own key.
 #
-# AuthorEmail below is a placeholder - set a real address before submitting; fdroiddata requires
-# one that reaches the author.
+# AuthorEmail is the author contact published on the F-Droid listing.
 
 Categories:
   - System
 License: MIT
 AuthorName: Jan So7o
-AuthorEmail: [EMAIL]
+AuthorEmail: jansolo.dev@gmail.com
 WebSite: https://github.com/jan5o7o/so7o-ztrackpad-lite
 SourceCode: https://github.com/jan5o7o/so7o-ztrackpad-lite
 IssueTracker: https://github.com/jan5o7o/so7o-ztrackpad-lite/issues
