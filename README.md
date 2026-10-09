@@ -27,11 +27,14 @@ beside it and the drawn pointer on the pad](docs/media/demo.gif)
 
 ## Why this
 
-A trackpad for people who read a lot. The **edge scroll strips** are the point: flick your
-finger down either edge and the page glides at a pace you set, instead of snapping to the
-next screenful — so a long article scrolls slowly and steadily, exactly as fast as you read.
-Two-finger drag scrolls too, and the pad follows the pointer wherever it goes, so you can
-park it on the page's edge and keep reading without moving your hand.
+Hold an unfolded foldable in two hands and your thumbs sit on the bottom half of the screen,
+usually over a keyboard. That is exactly where the top half is out of reach. This trackpad is
+for that moment: park it next to the thumb that is not typing, and one thumb drives the pointer
+across the whole screen — tap a link at the top, scroll, drag a slider — without reaching.
+
+On a Galaxy Fold, set the keyboard on the left and the trackpad on the right, and the right
+thumb does all the pointing. The same idea works one-handed on any phone. Flick the edge strip
+to glide down a long article at your reading pace.
 
 It asks for one accessibility service, enabled once, and then survives reboots on its own.
 Every click, long press, scroll and drag is an accessibility gesture — there is no second
