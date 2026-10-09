@@ -1,43 +1,63 @@
 # IzzyOnDroid inclusion request — draft
 
-File this as a new issue in the IzzyOnDroid repo (gitlab.com/IzzyOnDroid/repo). It takes the
-signed APK from the GitHub tagged release, so nothing has to change in the build.
+**File at https://codeberg.org/IzzyOnDroid/repodata/issues/new**, not on GitLab. IzzyOnDroid
+moved its tracker to Codeberg around March 2026: the GitLab `IzzyOnDroid/repo` issue tracker is
+retired (creating an issue there returns `403 Forbidden`, and its newest issue predates the
+move), while `IzzyOnDroid/repodata` on Codeberg takes `[AppRequest]` issues daily.
+
+Requires a Codeberg account. Title: `[AppRequest] So7o Z Trackpad Lite`.
 
 ---
 
-**Title:** Inclusion request: So7o Z Trackpad Lite (app.so7o.ztrackpad.lite)
+### Guidelines
 
-**Body:**
+- [x] I am the developer of the app.
+- [x] The app complies with the [App Inclusion Policy](https://izzyondroid.org/docs/general/AppInclusionPolicy/).
+- [x] The app is not already listed in the repo or issue tracker.
+- [x] The [Fastlane](https://izzyondroid.org/docs/general/Fastlane/) folder is available in the app's repo.
 
-App name: So7o Z Trackpad Lite
-Package: `app.so7o.ztrackpad.lite`
-License: MIT
-Source: https://github.com/jan5o7o/so7o-ztrackpad-lite
-Releases (APK attached to each tag): https://github.com/jan5o7o/so7o-ztrackpad-lite/releases
-Issue tracker: https://github.com/jan5o7o/so7o-ztrackpad-lite/issues
+### Link to the source code
 
-What it is: a floating trackpad and pointer for Android. It uses a single accessibility service
-to inject clicks, scrolls and drags as accessibility gestures, so it needs no root, no Shizuku
-and no companion app. Intended use case: on an unfolded foldable, the thumbs rest on the
-bottom half while typing, and the trackpad parked by the free thumb drives the pointer across
-the rest of the screen.
+https://github.com/jan5o7o/so7o-ztrackpad-lite
 
-Why it fits the repo policy:
+### Link to app in another app store
 
-- FOSS (MIT), and the only bundled jar (`libs/androidx-annotation.jar`) is Apache-2.0.
-- No ads, no trackers, no analytics.
-- Requests only `android.permission.VIBRATE`; there is no `INTERNET` permission at all, so it
-  makes no network connections.
-- No self-updater and no download of extra binaries.
-- Release-signed with a key I control (not a debug or shared test certificate); the APK is not
-  `debuggable` and not `testOnly`.
-- APK is attached to GitHub tagged releases, so it can be picked up for updates.
+_No response_
 
-Notes:
+### License used
 
-- The app requires the user to enable an accessibility service, which it explains on first run
-  and links to in Settings.
-- Certificate pinning (SHA-256): `c601e32b788f954a40234e6db0151b246cbff1267ec793f31185651268585004`
-- Fastlane metadata is in the repo under `fastlane/metadata/android/en-US/`.
-- Source tree builds with a hand-rolled script (`./build.sh`), plain Java, no Gradle; the
-  release APK in the GitHub release is the artifact to use.
+MIT
+
+### Categories
+
+System
+
+### Summary
+
+A floating trackpad and pointer for Android. One accessibility service, no root, no companion app.
+
+### Description
+
+A floating trackpad and pointer for Android, with no root and no companion app. Enable one
+accessibility service once, and it stays enabled across reboots.
+
+Intended use: on an unfolded foldable your thumbs rest on the bottom half of the screen, usually
+over a keyboard, and the top half is out of reach. Park the trackpad beside the thumb that is not
+typing, and one thumb drives the pointer across the whole screen. On a Galaxy Fold with the
+keyboard on the left, the trackpad sits on the right.
+
+- One finger moves the pointer. Tap to click, hold still for a long press, two-finger tap for right-click.
+- Clicks land through the pad: tapping sends the click at the pointer, even where the pad covers the target.
+- Edge scroll strips down both sides, like a laptop's; scrolling lands when you lift your finger.
+- Five colour themes and a panel-opacity slider, a lock, and resize from any corner.
+- Back, recents and the four arrow keys, sent as accessibility global actions.
+
+The app uses an accessibility service, which the user enables in Settings, to send taps, scrolls
+and drags. It requests only `VIBRATE`, has no `INTERNET` permission, no ads and no trackers. It is
+a spin-off of So7o Z Trackpad with its own package name, name, icon and screenshots.
+
+### Further Notices
+
+- APKs are attached to GitHub tagged releases: https://github.com/jan5o7o/so7o-ztrackpad-lite/releases
+- Signing certificate SHA-256: `c601e32b788f954a40234e6db0151b246cbff1267ec793f31185651268585004`
+- Built with a hand-rolled script (`./build.sh`), plain Java, no Gradle.
