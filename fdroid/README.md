@@ -6,11 +6,11 @@ app at build or run time.
 | File | What it is |
 |---|---|
 | `app.so7o.ztrackpad.lite.yml` | Draft F-Droid metadata, to be submitted to the `fdroiddata` repository. |
-| `izzyondroid-issue.md` | Draft issue text for the [IzzyOnDroid](https://izzyondroid.org/) repo. |
+| `izzyondroid-issue.md` | Draft `[AppRequest]` issue for IzzyOnDroid's tracker, which is now on [Codeberg](https://codeberg.org/IzzyOnDroid/repodata/issues). |
 
 **IzzyOnDroid is the shorter path.** It ships developer-built APKs, so it takes the signed APK
 already attached to each GitHub tagged release; the work is the fastlane metadata (in
-`fastlane/metadata/android/en-US/`) plus the issue.
+`fastlane/metadata/android/en-US/`) plus an issue on their Codeberg tracker.
 
 **F-Droid builds from source in an offline sandbox**, which needs two things this tree does not
 yet have: the API 36 platform available to its builder (see the TODO in the yml), and a
