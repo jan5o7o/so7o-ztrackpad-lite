@@ -18,6 +18,9 @@
 #
 # Build with SKIP_SIGN=1 (added to build.sh) so the compile step does not ask for a keystore:
 # F-Droid builds unsigned and signs with its own key.
+#
+# AuthorEmail below is a placeholder - set a real address before submitting; fdroiddata requires
+# one that reaches the author.
 
 Categories:
   - System
