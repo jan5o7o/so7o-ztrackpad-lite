@@ -19,13 +19,17 @@ Builds:
     output: out/ztrackpad-lite-unsigned.apk
     scanignore:
       - libs/androidx-annotation.jar
-    build: TARGET_SDK=33 SKIP_SIGN=1 ./build.sh
+    build:
+      - export PATH="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1):$PATH"
+      - TARGET_SDK=33 SKIP_SIGN=1 ./build.sh
 
 MaintainerNotes: |-
   Hand-rolled build: ./build.sh runs aapt2 -> javac -> d8 -> zip -> apksigner, so this
-  recipe only supplies the platform. The F-Droid buildserver's SDK tops out at android-33,
-  hence TARGET_SDK=33; the tree compiles against it unchanged while the GitHub release
-  targets 36. SKIP_SIGN=1 leaves out/ztrackpad-lite-unsigned.apk for F-Droid to sign.
+  recipe only supplies the platform and puts the SDK's build-tools on PATH, since
+  fdroidserver adds only the NDK to it. TARGET_SDK=33 matches the newest platform the
+  buildserver provisioning installs, and the tree compiles against it unchanged while
+  the GitHub release targets 36. SKIP_SIGN=1 leaves out/ztrackpad-lite-unsigned.apk
+  for F-Droid to sign.
   libs/androidx-annotation.jar is the vendored Apache-2.0 annotation jar from Maven Central;
   build.sh treats libs/*.jar as compile inputs, and no source file references it, so it is
   scanignored here and due to be dropped from the tree in the next release.
