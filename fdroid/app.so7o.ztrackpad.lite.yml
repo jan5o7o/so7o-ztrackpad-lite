@@ -7,14 +7,18 @@ SourceCode: https://github.com/jan5o7o/so7o-ztrackpad-lite
 IssueTracker: https://github.com/jan5o7o/so7o-ztrackpad-lite/issues
 Changelog: https://github.com/jan5o7o/so7o-ztrackpad-lite/blob/HEAD/CHANGELOG.md
 
+AutoName: So7o Z Trackpad Lite
+
 RepoType: git
 Repo: https://github.com/jan5o7o/so7o-ztrackpad-lite.git
 
 Builds:
-  - versionName: 0.3.0
-    versionCode: 3
-    commit: v0.3.0
+  - versionName: 0.3.1
+    versionCode: 4
+    commit: v0.3.1
     output: out/ztrackpad-lite-unsigned.apk
+    scanignore:
+      - libs/androidx-annotation.jar
     build: TARGET_SDK=33 SKIP_SIGN=1 ./build.sh
 
 MaintainerNotes: |-
@@ -22,8 +26,11 @@ MaintainerNotes: |-
   recipe only supplies the platform. The F-Droid buildserver's SDK tops out at android-33,
   hence TARGET_SDK=33; the tree compiles against it unchanged while the GitHub release
   targets 36. SKIP_SIGN=1 leaves out/ztrackpad-lite-unsigned.apk for F-Droid to sign.
+  libs/androidx-annotation.jar is the vendored Apache-2.0 annotation jar from Maven Central;
+  build.sh treats libs/*.jar as compile inputs, and no source file references it, so it is
+  scanignored here and due to be dropped from the tree in the next release.
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 0.3.0
-CurrentVersionCode: 3
+CurrentVersion: 0.3.1
+CurrentVersionCode: 4

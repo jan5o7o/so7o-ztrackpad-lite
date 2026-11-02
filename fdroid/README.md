@@ -20,14 +20,19 @@ metadata was written and [fdroiddata!55455](https://gitlab.com/fdroid/fdroiddata
 opened on 2026-11-02.
 
 The recipe is `TARGET_SDK=33 SKIP_SIGN=1 ./build.sh`, with
-`output: out/ztrackpad-lite-unsigned.apk`. android-33 is the newest platform the buildserver
-provisions, and the tree compiles against it unchanged, so the GitHub release still targets 36
-while the F-Droid build targets 33. `SKIP_SIGN=1` leaves the APK unsigned for F-Droid to sign.
+`output: out/ztrackpad-lite-unsigned.apk`, built from tag `v0.3.1`. android-33 is the newest
+platform the buildserver provisions, and the tree compiles against it unchanged, so the GitHub
+release still targets 36 while the F-Droid build targets 33. `SKIP_SIGN=1` leaves the APK
+unsigned for F-Droid to sign.
+
+0.3.1 is a build-only release, cut because the 0.3.0 tag's `build.sh` demanded a keystore and
+hardcoded the platform path. Its only changes are `TARGET_SDK` support and the unsigned
+packaging step.
 
 The file passes `fdroid readmeta`, `fdroid rewritemeta`, `fdroid lint` and `fdroid checkupdates`
-against fdroidserver 2.4.5, with `checkupdates` resolving `v0.3.0` from the tags. The recipe
-itself needs an SDK, which this machine does not have, so the merge request pipeline is its
-first build on the buildserver.
+against fdroidserver 2.4.5, with `checkupdates` resolving `v0.3.1` from the tags. The merge
+request pipeline ran the real build on the buildserver, which is how the 0.3.0 problem showed
+up.
 
 Still unanswered: whether android-33 is really the newest platform there or that provisioning
 file is stale, and what the reproducibility check looks at beyond the pinned mtimes the zip
