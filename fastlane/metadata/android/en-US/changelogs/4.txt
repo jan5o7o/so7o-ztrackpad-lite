@@ -1,0 +1,2 @@
+* No app changes. The build script now takes TARGET_SDK, so the tree can be built against an older platform.
+* SKIP_SIGN=1 stops after packaging and leaves the APK unsigned, for a store that signs with its own key.

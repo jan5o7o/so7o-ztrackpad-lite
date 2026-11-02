@@ -32,6 +32,18 @@ it can only ever describe the app as shipped.
 ▶ [A short walkthrough of the pad and its theme menu](https://youtube.com/shorts/Vc9253FUyPU?feature=share) —
 the theme panel's × close button and square rows, and the click-through fix.
 
+## 0.3.1 — 2026-11-02
+
+Build changes only, nothing in the app itself changes.
+
+- `build.sh` takes `TARGET_SDK`, so the tree can be compiled and linked against an older
+  platform than the one the release is built on.
+- `SKIP_SIGN=1` stops the script after packaging and leaves `out/ztrackpad-lite-unsigned.apk`,
+  for a store that signs with its own key.
+
+The F-Droid build starts from this tag, because the 0.3.0 tag's script demanded a keystore and
+hardcoded the platform path.
+
 ## Unreleased
 
 Nothing yet.

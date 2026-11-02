@@ -24,9 +24,9 @@ d8 -> zip -> apksigner and needs only the Android SDK tools, no Gradle. The reci
 just supplies the platform and the signing switch:
 
     Builds:
-      - versionName: 0.3.0
-        versionCode: 3
-        commit: v0.3.0
+      - versionName: 0.3.1
+        versionCode: 4
+        commit: v0.3.1
         output: out/ztrackpad-lite-unsigned.apk
         build: TARGET_SDK=33 SKIP_SIGN=1 ./build.sh
 
@@ -72,10 +72,14 @@ for F-Droid to sign.
 * [x] Releases are tagged and auto update is enabled (`AutoUpdateMode: Version`, `UpdateCheckMode: Tags`).
 
 Checked locally with fdroidserver 2.4.5: `fdroid readmeta`, `fdroid rewritemeta` and
-`fdroid lint` are clean, and `fdroid checkupdates` resolves `v0.3.0` from the tags. The
+`fdroid lint` are clean, and `fdroid checkupdates` resolves the tag from `v0.3.1`. The
 recipe itself has not run on a machine with the SDK here, so this pipeline is its first
 build.
 
 The RFP thread asked what the rebuild check needs for a hand-rolled build. The zip step pins
 a fixed mtime for every entry and pads uncompressed entries to 4-byte alignment, but I would
 like to know what else the reproducibility check looks at before claiming a verified build.
+
+The first version of this recipe pointed at `v0.3.0`, which fails: that tag's `build.sh` still
+required a keystore and hardcoded the platform path, and both were fixed after the tag. 0.3.1
+is a build-only release cut from those fixes, so this recipe builds a tagged commit.
