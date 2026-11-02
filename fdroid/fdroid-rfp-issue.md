@@ -1,7 +1,8 @@
-# F-Droid inclusion request — draft
+# F-Droid inclusion request
 
-File as an issue in the fdroiddata repository (gitlab.com/fdroid/fdroiddata/-/issues), using the
-app-inclusion template if one is offered.
+Filed on 2026-10-09 as `fdroiddata#4102`, moved the same day by Licaon_Kter to the submission
+queue as [rfp#4537](https://gitlab.com/fdroid/rfp/-/work_items/4537). Kept here as the record of
+what was asked; the follow-up went into the merge request, not this thread.
 
 **Title:** RFP: So7o Z Trackpad Lite - floating trackpad and pointer, no root
 
